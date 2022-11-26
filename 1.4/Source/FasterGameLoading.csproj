@@ -61,6 +61,7 @@
     <Publicize Include="Assembly-CSharp;0Harmony" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FasterGameLoadingSettings.cs" />
     <Compile Include="Misc\DeepProfiler_End_Patch.cs" />
     <Compile Include="Misc\DisableLogObsoleteMethodPatchErrors.cs" />
     <Compile Include="Misc\GlobalTextureAtlasManager_BakeStaticAtlases_Patch.cs" />

@@ -8,26 +8,24 @@ namespace FasterGameLoading
     public static class GraphicData_Init_Patch
     {
         public static Dictionary<string, List<GraphicData>> savedGraphics = new Dictionary<string, List<GraphicData>>();
-        public static bool Prefix(GraphicData __instance, out List<GraphicData> __state)
+        public static bool Prefix(GraphicData __instance)
         {
-            if (!savedGraphics.TryGetValue(__instance.texPath, out __state))
+            if (__instance.texPath.NullOrEmpty() is false)
             {
-                savedGraphics[__instance.texPath] = __state = new List<GraphicData>();
-            }
-            foreach (var item in __state)
-            {
-                if (IsTheSameGraphicData(__instance, item) && item.cachedGraphic != null)
+                if (!savedGraphics.TryGetValue(__instance.texPath, out var graphicDatas))
                 {
-                    __instance.cachedGraphic = item.cachedGraphic;
-                    return false;
+                    savedGraphics[__instance.texPath] = graphicDatas = new List<GraphicData>();
+                }
+                foreach (var item in graphicDatas)
+                {
+                    if (IsTheSameGraphicData(__instance, item) && item.cachedGraphic != null)
+                    {
+                        __instance.cachedGraphic = item.cachedGraphic;
+                        return false;
+                    }
                 }
             }
             return true;
-        }
-
-        public static void Postfix(GraphicData __instance, List<GraphicData> __state)
-        {
-            __state.Add(__instance);
         }
 
         public static bool IsTheSameGraphicData(GraphicData current, GraphicData other)
