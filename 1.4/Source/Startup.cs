@@ -21,14 +21,6 @@ namespace FasterGameLoading
             FasterGameLoadingSettings.loadedTexturesSinceLastSession = ModContentLoaderTexture2D_LoadTexture_Patch.loadedTexturesThisSession;
             FasterGameLoadingSettings.loadedTypesByFullNameSinceLastSession = GenTypes_GetTypeInAnyAssemblyInt_Patch.loadedTypesThisSession;
             LoadedModManager.GetMod<FasterGameLoadingMod>().WriteSettings();
-            if (FasterGameLoadingMod.stopwatches.Any())
-            {
-                Log.Message("Logging stopwatches: " + FasterGameLoadingMod.stopwatches.Count);
-                foreach (var stopwatch in FasterGameLoadingMod.stopwatches.OrderByDescending(x => x.Value.totalTime))
-                {
-                    stopwatch.Value.LogTime();
-                }
-            }
         }
     }
 }

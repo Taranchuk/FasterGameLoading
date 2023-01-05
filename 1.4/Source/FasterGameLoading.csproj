@@ -66,6 +66,7 @@
     <Compile Include="Misc\DisableLogObsoleteMethodPatchErrors.cs" />
     <Compile Include="Misc\GlobalTextureAtlasManager_BakeStaticAtlases_Patch.cs" />
     <Compile Include="Misc\GlobalTextureAtlasManager_TryInsertStatic_Patch.cs" />
+    <Compile Include="PerformanceProfiling.cs" />
     <Compile Include="ReflectionOptimizations\AccessTools_AllTypes_Patch.cs" />
     <Compile Include="ReflectionOptimizations\AccessTools_TypeByName_Patch.cs" />
     <Compile Include="Misc\DeepProfiler_Start_Patch.cs" />
@@ -75,8 +76,8 @@
     <Compile Include="FasterGameLoadingMod.cs" />
     <Compile Include="ReflectionOptimizations\GenTypes_GetTypeInAnyAssemblyInt_Patch.cs" />
     <Compile Include="Startup.cs" />
-    <Compile Include="StopwatchData.cs" />
     <Compile Include="TextureLoading\GraphicData_Init_Patch.cs" />
+    <Compile Include="TextureLoading\Log_Error_Patch.cs" />
     <Compile Include="TextureLoading\ModContentLoaderTexture2D_LoadTexture_Patch.cs" />
     <Compile Include="TextureLoading\TextureResize.cs" />
   </ItemGroup>

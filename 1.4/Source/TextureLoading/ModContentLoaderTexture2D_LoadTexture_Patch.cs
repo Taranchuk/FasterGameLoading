@@ -15,19 +15,19 @@ namespace FasterGameLoading
         public static Dictionary<string, Texture2D> savedTextures = new Dictionary<string, Texture2D>();
         public static bool Prefix(VirtualFile file, out bool __state, ref Texture2D __result)
         {
-            if (savedTextures.TryGetValue(file.FullPath, out __result))
+            var fullPath = file.FullPath;
+            if (savedTextures.TryGetValue(fullPath, out __result))
             {
                 __state = false;
                 return false;
             }
 
             __state = true;
-            var fullPath = file.FullPath;
             var index = fullPath.IndexOf("Textures\\");
             if (index >= 0)
             {
                 var path = fullPath.Substring(index);
-                loadedTexturesThisSession[path] = file.FullPath;
+                loadedTexturesThisSession[path] = fullPath;
                 if (FasterGameLoadingSettings.loadedTexturesSinceLastSession.TryGetValue(path, out var otherPath) && fullPath != otherPath)
                 {
                     var texture = new Texture2D(2, 2);

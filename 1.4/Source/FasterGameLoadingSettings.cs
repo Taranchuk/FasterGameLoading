@@ -11,7 +11,6 @@ namespace FasterGameLoading
         public static Dictionary<string, string> loadedTexturesSinceLastSession = new Dictionary<string, string>();
         public static Dictionary<string, ModContentPack> modsByPackageIds = new Dictionary<string, ModContentPack>();
         public static Dictionary<string, string> loadedTypesByFullNameSinceLastSession = new Dictionary<string, string>();
-
         public static List<string> modsInLastSession = new List<string>();
         public static bool disableStaticAtlasesBaking;
         public static ModContentPack GetModContent(string packageId)
