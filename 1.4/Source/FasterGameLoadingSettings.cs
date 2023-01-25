@@ -12,6 +12,8 @@ namespace FasterGameLoading
         public static Dictionary<string, ModContentPack> modsByPackageIds = new Dictionary<string, ModContentPack>();
         public static Dictionary<string, string> loadedTypesByFullNameSinceLastSession = new Dictionary<string, string>();
         public static List<string> modsInLastSession = new List<string>();
+        public static HashSet<string> successfulXMLPathesSinceLastSession = new HashSet<string>();
+        public static HashSet<string> failedXMLPathesSinceLastSession = new HashSet<string>();
         public static bool disableStaticAtlasesBaking;
         public static ModContentPack GetModContent(string packageId)
         {
@@ -68,17 +70,23 @@ namespace FasterGameLoading
             base.ExposeData();
             Scribe_Collections.Look(ref loadedTexturesSinceLastSession, "loadedTexturesSinceLastSession", LookMode.Value, LookMode.Value);
             Scribe_Collections.Look(ref loadedTypesByFullNameSinceLastSession, "loadedTypesByFullNameSinceLastSession", LookMode.Value, LookMode.Value);
+            Scribe_Collections.Look(ref successfulXMLPathesSinceLastSession, "successfulXMLPathesSinceLastSession", LookMode.Value);
+            Scribe_Collections.Look(ref failedXMLPathesSinceLastSession, "failedXMLPathesSinceLastSession", LookMode.Value);
             Scribe_Collections.Look(ref modsInLastSession, "modsInLastSession", LookMode.Value);
             Scribe_Values.Look(ref disableStaticAtlasesBaking, "disableStaticAtlasesBaking");
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 loadedTexturesSinceLastSession ??= new Dictionary<string, string>();
                 loadedTypesByFullNameSinceLastSession ??= new Dictionary<string, string>();
+                failedXMLPathesSinceLastSession ??= new HashSet<string>();
+                successfulXMLPathesSinceLastSession ??= new HashSet<string>();
                 modsInLastSession ??= new List<string>();
                 if (!modsInLastSession.SequenceEqual(ModsConfig.ActiveModsInLoadOrder.Select(x => x.packageIdLowerCase)))
                 {
                     loadedTexturesSinceLastSession.Clear();
                     loadedTypesByFullNameSinceLastSession.Clear();
+                    failedXMLPathesSinceLastSession.Clear();
+                    successfulXMLPathesSinceLastSession.Clear();
                 }
             }
         }

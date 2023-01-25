@@ -20,6 +20,8 @@ namespace FasterGameLoading
             FasterGameLoadingSettings.modsInLastSession = ModsConfig.ActiveModsInLoadOrder.Select(x => x.packageIdLowerCase).ToList();
             FasterGameLoadingSettings.loadedTexturesSinceLastSession = ModContentLoaderTexture2D_LoadTexture_Patch.loadedTexturesThisSession;
             FasterGameLoadingSettings.loadedTypesByFullNameSinceLastSession = GenTypes_GetTypeInAnyAssemblyInt_Patch.loadedTypesThisSession;
+            FasterGameLoadingSettings.successfulXMLPathesSinceLastSession = XmlNode_SelectSingleNode_Patch.successfulXMLPathesThisSession;
+            FasterGameLoadingSettings.failedXMLPathesSinceLastSession = XmlNode_SelectSingleNode_Patch.failedXMLPathesThisSession;
             LoadedModManager.GetMod<FasterGameLoadingMod>().WriteSettings();
         }
     }

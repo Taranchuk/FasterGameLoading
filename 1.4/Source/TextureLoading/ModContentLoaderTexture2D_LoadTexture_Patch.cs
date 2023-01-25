@@ -33,6 +33,19 @@ namespace FasterGameLoading
                     var texture = new Texture2D(2, 2);
                     texture.name = Path.GetFileNameWithoutExtension(file.Name);
                     __result = texture;
+                    //foreach (var mod in ModLister.AllInstalledMods)
+                    //{
+                    //    if (fullPath.Contains(mod.RootDir.FullName))
+                    //    {
+                    //        foreach (var otherMod in ModLister.AllInstalledMods)
+                    //        {
+                    //            if (otherPath.Contains(otherMod.RootDir.FullName))
+                    //            {
+                    //                Log.Message(mod.Name + " - Preventing loading " + texture.name + ", already replaced with " + otherMod.Name);
+                    //            }
+                    //        }
+                    //    }
+                    //}
                     return false;
                 }
             }
