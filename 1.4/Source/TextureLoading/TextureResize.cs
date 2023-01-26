@@ -58,14 +58,21 @@ namespace FasterGameLoading
                 {
                     continue;
                 }
-                foreach (var lifeStage in pawnKind.lifeStages)
+                if (pawnKind.lifeStages != null)
                 {
-                    AddEntry(TextureType.Pawn, pawnKind.race, lifeStage.bodyGraphicData.Graphic);
-                    if (lifeStage.dessicatedBodyGraphicData != null)
+                    foreach (var lifeStage in pawnKind.lifeStages)
                     {
-                        AddEntry(TextureType.Pawn, pawnKind.race, lifeStage.dessicatedBodyGraphicData.Graphic);
+                        if (lifeStage.bodyGraphicData != null)
+                        {
+                            AddEntry(TextureType.Pawn, pawnKind.race, lifeStage.bodyGraphicData.Graphic);
+                            if (lifeStage.dessicatedBodyGraphicData != null)
+                            {
+                                AddEntry(TextureType.Pawn, pawnKind.race, lifeStage.dessicatedBodyGraphicData.Graphic);
+                            }
+                        }
                     }
                 }
+
             }
 
             foreach (var styleDef in DefDatabase<StyleCategoryDef>.AllDefs)

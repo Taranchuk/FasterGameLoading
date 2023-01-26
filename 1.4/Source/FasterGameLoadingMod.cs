@@ -19,6 +19,7 @@ namespace FasterGameLoading
             settings = this.GetSettings<FasterGameLoadingSettings>();
             harmony = new Harmony("FasterGameLoadingMod");
             harmony.PatchAll();
+
             // an attempt to put harmony patchings into another thread, didn't work out by some reason
             //thread = new Thread(new ThreadStart(() =>
             //{
