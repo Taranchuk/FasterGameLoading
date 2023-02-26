@@ -103,6 +103,7 @@ namespace FasterGameLoading
             }
             stopwatch.Stop();
             Log.Warning("Finished loading graphics and icons - " + DateTime.Now.ToString());
+            MedicalCareUtility.Reset();
             yield return null;
         }
     }
