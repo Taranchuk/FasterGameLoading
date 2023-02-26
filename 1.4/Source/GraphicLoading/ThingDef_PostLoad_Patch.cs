@@ -12,6 +12,7 @@ namespace FasterGameLoading
     [HarmonyPatch(typeof(ThingDef), "PostLoad")]
     public static class ThingDef_PostLoad_Patch
     {
+        public static bool Prepare() => FasterGameLoadingSettings.delayGraphicLoading;
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> codeInstructions)
         {
             var execute = AccessTools.Method(typeof(LongEventHandler), nameof(LongEventHandler.ExecuteWhenFinished));
