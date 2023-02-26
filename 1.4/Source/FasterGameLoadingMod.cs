@@ -13,8 +13,9 @@ namespace FasterGameLoading
 {
     public class DelayedActions : MonoBehaviour
     {
-        public List<Action> graphicsToLoad = new List<Action>();
-        public List<Action> iconsToLoad = new List<Action>();
+        public List<(ThingDef, Action)> graphicsToLoad = new ();
+        public List<(BuildableDef, Action)> iconsToLoad = new ();
+        public const float MaxTimeToLoadThisFrame = 0.005f;
         public IEnumerator LoadGraphics()
         {
             Stopwatch stopwatch = new();
@@ -25,16 +26,20 @@ namespace FasterGameLoading
             while (graphicsToLoad.Any())
             {
                 var entry = graphicsToLoad.Pop();
-                entry();
-                count++;
-                float elapsed = (float)stopwatch.ElapsedTicks / Stopwatch.Frequency;
-                totalElapsed += elapsed;
-                if (elapsed >= 0.01f)
+                if (entry.Item1.graphic == BaseContent.BadGraphic)
                 {
-                    Log.Warning("Done loading graphic: " + count);
-                    count = 0;
-                    yield return new WaitForSeconds(0.01f);
-                    stopwatch.Restart();
+                    entry.Item2();
+                    count++;
+                    float elapsed = (float)stopwatch.ElapsedTicks / Stopwatch.Frequency;
+                    totalElapsed += elapsed;
+                    if (elapsed >= MaxTimeToLoadThisFrame)
+                    {
+                        Log.Warning("Done loading graphics in this pass: " + count);
+                        Log.ResetMessageCount();
+                        count = 0;
+                        yield return 0;
+                        stopwatch.Restart();
+                    }
                 }
             }
 
@@ -42,17 +47,22 @@ namespace FasterGameLoading
             while (iconsToLoad.Any())
             {
                 var entry = iconsToLoad.Pop();
-                entry();
-                count++;
-                float elapsed = (float)stopwatch.ElapsedTicks / Stopwatch.Frequency;
-                totalElapsed += elapsed;
-                if (elapsed >= 0.01f)
+                if (entry.Item1.uiIcon == BaseContent.BadTex)
                 {
-                    Log.Warning("Done loading icon: " + count);
-                    count = 0;
-                    yield return new WaitForSeconds(0.01f);
-                    stopwatch.Restart();
+                    entry.Item2();
+                    count++;
+                    float elapsed = (float)stopwatch.ElapsedTicks / Stopwatch.Frequency;
+                    totalElapsed += elapsed;
+                    if (elapsed >= MaxTimeToLoadThisFrame)
+                    {
+                        Log.Warning("Done loading icons in this pass: " + count);
+                        Log.ResetMessageCount();
+                        count = 0;
+                        yield return 0;
+                        stopwatch.Restart();
+                    }
                 }
+
             }
             stopwatch.Stop();
             Log.Warning("Finished loading graphics and icons - " + DateTime.Now.ToString());

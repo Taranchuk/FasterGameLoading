@@ -74,13 +74,13 @@
     <Compile Include="FasterGameLoadingMod.cs" />
     <Compile Include="ReflectionOptimizations\GenTypes_GetTypeInAnyAssemblyInt_Patch.cs" />
     <Compile Include="Startup.cs" />
-    <Compile Include="TextureLoading\BuildableDef_PostLoad_Patch.cs" />
-    <Compile Include="TextureLoading\GraphicData_Init_Patch.cs" />
-    <Compile Include="TextureLoading\Log_Error_Patch.cs" />
-    <Compile Include="TextureLoading\MemoryUtility_UnloadUnusedUnityAssets_Patch.cs" />
-    <Compile Include="TextureLoading\ModContentLoaderTexture2D_LoadTexture_Patch.cs" />
-    <Compile Include="TextureLoading\TextureResize.cs" />
-    <Compile Include="TextureLoading\ThingDef_PostLoad_Patch.cs" />
+    <Compile Include="GraphicLoading\BuildableDef_PostLoad_Patch.cs" />
+    <Compile Include="GraphicLoading\GraphicData_Init_Patch.cs" />
+    <Compile Include="GraphicLoading\Log_Error_Patch.cs" />
+    <Compile Include="GraphicLoading\MemoryUtility_UnloadUnusedUnityAssets_Patch.cs" />
+    <Compile Include="GraphicLoading\ModContentLoaderTexture2D_LoadTexture_Patch.cs" />
+    <Compile Include="GraphicLoading\TextureResize.cs" />
+    <Compile Include="GraphicLoading\ThingDef_PostLoad_Patch.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Unused\" />
