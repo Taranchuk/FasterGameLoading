@@ -70,6 +70,11 @@ namespace FasterGameLoading
                         Log.Error("Error loading graphic for " + entry.Item1 + " - " + ex.Message);
                     }
                 }
+
+                if (entry.Item1.plant != null)
+                {
+                    entry.Item1.plant.PostLoadSpecial(entry.Item1);
+                }
             }
 
             count = 0;
