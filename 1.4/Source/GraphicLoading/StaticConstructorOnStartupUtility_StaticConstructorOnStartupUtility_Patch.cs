@@ -4,8 +4,8 @@ using Verse.Profile;
 
 namespace FasterGameLoading
 {
-    [HarmonyPatch(typeof(MemoryUtility), nameof(MemoryUtility.UnloadUnusedUnityAssets))]
-    public static class MemoryUtility_UnloadUnusedUnityAssets_Patch
+    [HarmonyPatch(typeof(StaticConstructorOnStartupUtility), nameof(StaticConstructorOnStartupUtility.CallAll))]
+    public static class StaticConstructorOnStartupUtility_StaticConstructorOnStartupUtility_Patch
     {
         public static void Postfix()
         {
