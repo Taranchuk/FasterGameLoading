@@ -27,48 +27,23 @@ namespace FasterGameLoading
                     yield return 0;
                 }
                 var entry = graphicsToLoad.Pop();
-                if (entry.Item1.graphic == BaseContent.BadGraphic)
+
+                try
                 {
-                    try
-                    {
-                        entry.Item2();
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error("Error loading graphic for " + entry.Item1 + " - " + ex.Message);
-                    }
-                    count++;
-                    float elapsed = (float)stopwatch.ElapsedTicks / Stopwatch.Frequency;
-                    totalElapsed += elapsed;
-                    if (elapsed >= MaxTimeToLoadThisFrame)
-                    {
-                        count = 0;
-                        yield return 0;
-                        stopwatch.Restart();
-                    }
+                    entry.Item2();
                 }
-                else
+                catch (Exception ex)
                 {
-                    try
-                    {
-                        if (entry.Item1.graphicData.shaderType == null)
-                        {
-                            entry.Item1.graphicData.shaderType = ShaderTypeDefOf.Cutout;
-                        }
-                        if (entry.Item1.drawerType != DrawerType.RealtimeOnly)
-                        {
-                            TextureAtlasGroup textureAtlasGroup = entry.Item1.category.ToAtlasGroup();
-                            entry.Item1.graphic.TryInsertIntoAtlas(textureAtlasGroup);
-                            if (textureAtlasGroup == TextureAtlasGroup.Building && entry.Item1.Minifiable)
-                            {
-                                entry.Item1.graphic.TryInsertIntoAtlas(TextureAtlasGroup.Item);
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error("Error loading graphic for " + entry.Item1 + " - " + ex.Message);
-                    }
+                    Log.Error("Error loading graphic for " + entry.Item1 + " - " + ex.Message);
+                }
+                count++;
+                float elapsed = (float)stopwatch.ElapsedTicks / Stopwatch.Frequency;
+                totalElapsed += elapsed;
+                if (elapsed >= MaxTimeToLoadThisFrame)
+                {
+                    count = 0;
+                    yield return 0;
+                    stopwatch.Restart();
                 }
 
                 if (entry.Item1.plant != null)
