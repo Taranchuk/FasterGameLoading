@@ -49,18 +49,25 @@ namespace FasterGameLoading
                 }
                 else
                 {
-                    if (entry.Item1.graphicData.shaderType == null)
+                    try
                     {
-                        entry.Item1.graphicData.shaderType = ShaderTypeDefOf.Cutout;
-                    }
-                    if (entry.Item1.drawerType != DrawerType.RealtimeOnly)
-                    {
-                        TextureAtlasGroup textureAtlasGroup = entry.Item1.category.ToAtlasGroup();
-                        entry.Item1.graphic.TryInsertIntoAtlas(textureAtlasGroup);
-                        if (textureAtlasGroup == TextureAtlasGroup.Building && entry.Item1.Minifiable)
+                        if (entry.Item1.graphicData.shaderType == null)
                         {
-                            entry.Item1.graphic.TryInsertIntoAtlas(TextureAtlasGroup.Item);
+                            entry.Item1.graphicData.shaderType = ShaderTypeDefOf.Cutout;
                         }
+                        if (entry.Item1.drawerType != DrawerType.RealtimeOnly)
+                        {
+                            TextureAtlasGroup textureAtlasGroup = entry.Item1.category.ToAtlasGroup();
+                            entry.Item1.graphic.TryInsertIntoAtlas(textureAtlasGroup);
+                            if (textureAtlasGroup == TextureAtlasGroup.Building && entry.Item1.Minifiable)
+                            {
+                                entry.Item1.graphic.TryInsertIntoAtlas(TextureAtlasGroup.Item);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("Error loading graphic for " + entry.Item1 + " - " + ex.Message);
                     }
                 }
             }
