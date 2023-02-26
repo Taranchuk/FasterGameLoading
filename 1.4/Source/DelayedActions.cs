@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RimWorld;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -28,7 +29,14 @@ namespace FasterGameLoading
                 var entry = graphicsToLoad.Pop();
                 if (entry.Item1.graphic == BaseContent.BadGraphic)
                 {
-                    entry.Item2();
+                    try
+                    {
+                        entry.Item2();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("Error loading graphic for " + entry.Item1 + " - " + ex.Message);
+                    }
                     count++;
                     float elapsed = (float)stopwatch.ElapsedTicks / Stopwatch.Frequency;
                     totalElapsed += elapsed;
@@ -37,6 +45,22 @@ namespace FasterGameLoading
                         count = 0;
                         yield return 0;
                         stopwatch.Restart();
+                    }
+                }
+                else
+                {
+                    if (entry.Item1.graphicData.shaderType == null)
+                    {
+                        entry.Item1.graphicData.shaderType = ShaderTypeDefOf.Cutout;
+                    }
+                    if (entry.Item1.drawerType != DrawerType.RealtimeOnly)
+                    {
+                        TextureAtlasGroup textureAtlasGroup = entry.Item1.category.ToAtlasGroup();
+                        entry.Item1.graphic.TryInsertIntoAtlas(textureAtlasGroup);
+                        if (textureAtlasGroup == TextureAtlasGroup.Building && entry.Item1.Minifiable)
+                        {
+                            entry.Item1.graphic.TryInsertIntoAtlas(TextureAtlasGroup.Item);
+                        }
                     }
                 }
             }
@@ -51,7 +75,14 @@ namespace FasterGameLoading
                 var entry = iconsToLoad.Pop();
                 if (entry.Item1.uiIcon == BaseContent.BadTex)
                 {
-                    entry.Item2();
+                    try
+                    {
+                        entry.Item2();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("Error loading icon for " + entry.Item1 + " - " + ex.Message);
+                    }
                     count++;
                     float elapsed = (float)stopwatch.ElapsedTicks / Stopwatch.Frequency;
                     totalElapsed += elapsed;
