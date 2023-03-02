@@ -30,16 +30,21 @@ namespace FasterGameLoading
                 }
             }
         }
-    
+        
+
         public static void ExecuteDelayed(Action action, ThingDef def)
         {
             if (typeof(Graphic_Linked).IsAssignableFrom(def.graphicData.graphicClass) || def.graphicData.Linked)
             {
+                var oldValue = Startup.doNotDelayLongEventsWhenFinished;
+                Startup.doNotDelayLongEventsWhenFinished = true;
+                Log.Message("Allowing: " + action.Method.FullDescription());
                 LongEventHandler.ExecuteWhenFinished(action);
+                Startup.doNotDelayLongEventsWhenFinished = oldValue;
             }
             else
             {
-                FasterGameLoadingMod.loadGraphicsPerFrames.graphicsToLoad.Add((def, action));
+                FasterGameLoadingMod.delayedActions.graphicsToLoad.Add((def, action));
             }
         }
     }

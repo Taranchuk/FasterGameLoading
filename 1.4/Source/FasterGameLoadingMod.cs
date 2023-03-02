@@ -11,15 +11,17 @@ namespace FasterGameLoading
         public static Harmony harmony;
         public static FasterGameLoadingSettings settings;
         public static Thread threadPostLoad;
-        public static DelayedActions loadGraphicsPerFrames;
+        public static DelayedActions delayedActions;
         public FasterGameLoadingMod(ModContentPack pack) : base(pack)
         {
             var gameObject = new GameObject("FasterGameLoadingMod");
-            UnityEngine.Object.DontDestroyOnLoad(gameObject);
-            loadGraphicsPerFrames = gameObject.AddComponent<DelayedActions>();
+            Object.DontDestroyOnLoad(gameObject);
+            delayedActions = gameObject.AddComponent<DelayedActions>();
             settings = this.GetSettings<FasterGameLoadingSettings>();
             harmony = new Harmony("FasterGameLoadingMod");
             harmony.PatchAll();
+            harmony.Patch(AccessTools.DeclaredMethod(typeof(LongEventHandler), nameof(LongEventHandler.ExecuteWhenFinished)),
+                prefix: new HarmonyMethod(AccessTools.Method(typeof(Startup), nameof(Startup.DelayExecuteWhenFinished))));
 
             // an attempt to put harmony patchings into another thread, didn't work out by some reason
             //thread = new Thread(new ThreadStart(() =>
@@ -29,7 +31,6 @@ namespace FasterGameLoading
             //}));
             //thread.Start();
         }
-
         public override string SettingsCategory()
         {
             return this.Content.Name;

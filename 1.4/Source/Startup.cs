@@ -1,6 +1,9 @@
 ﻿using HarmonyLib;
+using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using UnityEngine;
 using Verse;
 
 namespace FasterGameLoading
@@ -14,6 +17,40 @@ namespace FasterGameLoading
             return ModsConfig.ActiveModsInLoadOrder.Any(x => x.Name == "BetterLoading")
                 ? AccessTools.Method("BetterLoading.BetterLoadingMain:CreateTimingReport")
                 : (MethodBase)AccessTools.Method(typeof(StaticConstructorOnStartupUtility), "CallAll");
+        }
+
+        public static void Prefix()
+        {
+            FasterGameLoadingMod.harmony.Patch(AccessTools.DeclaredMethod(typeof(Harmony), nameof(Harmony.PatchAll), 
+                new Type[] { typeof(Assembly) }), prefix: new HarmonyMethod(AccessTools.Method(typeof(Startup), nameof(DelayHarmonyPatchAll))));
+        }
+
+        public static bool doNotDelayHarmonyPatches;
+        public static bool DelayHarmonyPatchAll(Harmony __instance, Assembly assembly)
+        {
+            if (doNotDelayHarmonyPatches) return true;
+            FasterGameLoadingMod.delayedActions.harmonyPatchesToPerform.Add((__instance, assembly));
+            return false;
+        }
+
+        public static bool doNotDelayLongEventsWhenFinished;
+        public static bool DelayExecuteWhenFinished(Action action)
+        {
+            if (doNotDelayLongEventsWhenFinished) return true;
+            if (action.Method.Name.Contains("DoPlayLoad") is false && action.Method.DeclaringType.Assembly == typeof(Game).Assembly)
+            {
+                FasterGameLoadingMod.delayedActions.actionsToPerform.Add(action);
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+        private static void PostfixLogMethod(MethodBase __originalMethod)
+        {
+            Log.Message("Running " + __originalMethod.FullDescription());
+            Log.ResetMessageCount();
         }
         public static void Postfix()
         {

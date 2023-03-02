@@ -33,11 +33,15 @@ namespace FasterGameLoading
             if (def is ThingDef thingDef && thingDef.graphicData != null && (typeof(Graphic_Linked).IsAssignableFrom(thingDef.graphicData.graphicClass) 
                 || thingDef.graphicData.Linked))
             {
+                var oldValue = Startup.doNotDelayLongEventsWhenFinished;
+                Startup.doNotDelayLongEventsWhenFinished = true;
+                Log.Message("Allowing: " + action.Method.FullDescription());
                 LongEventHandler.ExecuteWhenFinished(action);
+                Startup.doNotDelayLongEventsWhenFinished = oldValue;
             }
             else
             {
-                FasterGameLoadingMod.loadGraphicsPerFrames.iconsToLoad.Add((def, action));
+                FasterGameLoadingMod.delayedActions.iconsToLoad.Add((def, action));
             }
         }
     }

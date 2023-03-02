@@ -12,7 +12,7 @@ namespace FasterGameLoading
         {
             LongEventHandler.toExecuteWhenFinished.Add(delegate
             {
-                FasterGameLoadingMod.loadGraphicsPerFrames.StartCoroutine(FasterGameLoadingMod.loadGraphicsPerFrames.LoadGraphics());
+                FasterGameLoadingMod.delayedActions.StartCoroutine(FasterGameLoadingMod.delayedActions.PerformActions());
             });
         }
     }
