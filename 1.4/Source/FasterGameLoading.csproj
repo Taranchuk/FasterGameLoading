@@ -68,6 +68,7 @@
     <Compile Include="Misc\GlobalTextureAtlasManager_BakeStaticAtlases_Patch.cs" />
     <Compile Include="Misc\GlobalTextureAtlasManager_TryInsertStatic_Patch.cs" />
     <Compile Include="Misc\XMLNode_SelectSingleNodes_Patch.cs" />
+    <Compile Include="ModContentPack_ReloadContentInt_Patch.cs" />
     <Compile Include="RedirectHugslibToMainThread.cs" />
     <Compile Include="ReflectionOptimizations\AccessTools_AllTypes_Patch.cs" />
     <Compile Include="ReflectionOptimizations\AccessTools_TypeByName_Patch.cs" />

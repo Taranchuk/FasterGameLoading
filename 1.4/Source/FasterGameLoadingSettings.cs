@@ -17,6 +17,7 @@ namespace FasterGameLoading
         public static bool delayLongEventActionsLoading = true;
         public static bool delayHarmonyPatchesLoading = true;
         public static bool delayGraphicLoading = true;
+        public static bool earlyModContentLoading = true;
         public static bool disableStaticAtlasesBaking;
         public static ModContentPack GetModContent(string packageId)
         {
@@ -33,6 +34,7 @@ namespace FasterGameLoading
         {
             var ls = new Listing_Standard();
             ls.Begin(new Rect(inRect.x, inRect.y, inRect.width, 500));
+            ls.CheckboxLabeled("Load mod content early when the game is idling the most, waiting for other threads to finish. Disable this if you will encounter any issues.", ref earlyModContentLoading);
             ls.CheckboxLabeled("Prevent long event loading during startup and load them gradually during playing. Will cut some time off during loading, however it might be not stable and error prone. Disable this if you will encounter any issues.", ref delayLongEventActionsLoading);
             ls.CheckboxLabeled("Prevent harmony patches loading during startup and load them gradually during playing. Will cut some time off during loading, however it might be not stable and error prone. Disable this if you will encounter any issues.", ref delayHarmonyPatchesLoading);
             ls.CheckboxLabeled("Prevent graphic and icon loading during startup and load them gradually during playing. Will cut some time off during loading, however it might be not stable and error prone. Disable this if you will encounter any issues.", ref delayGraphicLoading);
@@ -83,6 +85,7 @@ namespace FasterGameLoading
             Scribe_Values.Look(ref delayGraphicLoading, "delayGraphicLoading", true);
             Scribe_Values.Look(ref delayLongEventActionsLoading, "delayLongEventActionsLoading", true);
             Scribe_Values.Look(ref delayHarmonyPatchesLoading, "delayHarmonyPatchesLoading", true);
+            Scribe_Values.Look(ref earlyModContentLoading, "earlyModContentLoading", true);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 loadedTexturesSinceLastSession ??= new Dictionary<string, string>();

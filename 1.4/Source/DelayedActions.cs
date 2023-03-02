@@ -21,9 +21,22 @@ namespace FasterGameLoading
         private List<Type> curTypes;
         private Harmony curHarmony;
         private Assembly curAssembly;
+        private Stopwatch stopwatch = new();
+        public void LateUpdate()
+        {
+            if (FasterGameLoadingSettings.earlyModContentLoading)
+            {
+                var modToLoad = LoadedModManager.RunningMods.Where(x =>
+                    ModContentPack_ReloadContentInt_Patch.loadedMods.Contains(x) is false).FirstOrDefault();
+                if (modToLoad != null)
+                {
+                    modToLoad.ReloadContentInt();
+                }
+            }
+        }
+
         public IEnumerator PerformActions()
         {
-            Stopwatch stopwatch = new();
             stopwatch.Start();
             var count = 0;
             Log.Warning("Starting actions: " + actionsToPerform.Count + " - " + DateTime.Now.ToString());
@@ -40,7 +53,7 @@ namespace FasterGameLoading
                 }
                 catch (Exception ex)
                 {
-                    Log.Error("Error loading action for " + action.Method.FullDescription() + " - " + ex.Message);
+                    Error("Error loading action for " + action.Method.FullDescription(), ex);
                 }
                 count++;
                 float elapsed = (float)stopwatch.ElapsedTicks / Stopwatch.Frequency;
@@ -79,7 +92,7 @@ namespace FasterGameLoading
                     }
                     catch (Exception ex)
                     {
-                        Log.Error("Error performing harmony patches for " + curAssembly + " - " + ex.Message);
+                        Error("Error performing harmony patches for " + curAssembly, ex);
                     }
                 }
                 count++;
@@ -108,7 +121,7 @@ namespace FasterGameLoading
                 }
                 catch (Exception ex)
                 {
-                    Log.Error("Error loading graphic for " + def + " - " + ex.Message);
+                    Error("Error loading graphic for " + def, ex);
                 }
                 count++;
                 float elapsed = (float)stopwatch.ElapsedTicks / Stopwatch.Frequency;
@@ -143,7 +156,7 @@ namespace FasterGameLoading
                     }
                     catch (Exception ex)
                     {
-                        Log.Error("Error loading icon for " + def + " - " + ex.Message);
+                        Error("Error loading icon for " + def, ex);
                     }
                     count++;
                     float elapsed = (float)stopwatch.ElapsedTicks / Stopwatch.Frequency;
@@ -157,7 +170,13 @@ namespace FasterGameLoading
             }
             stopwatch.Stop();
             Log.Warning("Finished loading icons - " + DateTime.Now.ToString());
+            this.enabled = false;
             yield return null;
+        }
+
+        public void Error(string message, Exception ex)
+        {
+            Log.Error(message + " - " + ex + " - " + new StackTrace());
         }
     }
 }

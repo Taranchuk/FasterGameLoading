@@ -17,7 +17,6 @@ namespace FasterGameLoading
                     var action = FasterGameLoadingMod.delayedActions.actionsToPerform[i];
                     if (action.Target == __instance)
                     {
-                        Log.Message("Found action target: " + action.Method.FullDescription());
                         action();
                         FasterGameLoadingMod.delayedActions.actionsToPerform.RemoveAt(i);
                     }

@@ -30,7 +30,7 @@ namespace FasterGameLoading
                     }
                     catch (Exception ex)
                     {
-                        Log.Error("Error performing action for " + entry.Method.FullDescription() + " - " + ex.Message);
+                        FasterGameLoadingMod.delayedActions.Error("Error performing action for " + entry.Method.FullDescription(), ex);
                     }
                 }
             }
@@ -51,7 +51,7 @@ namespace FasterGameLoading
                     }
                     catch (Exception ex)
                     {
-                        Log.Error("Error performing harmony patches for " + entry.Item1 + " - " + entry.Item2 + " - " + ex.Message);
+                        FasterGameLoadingMod.delayedActions.Error("Error performing harmony patches for " + entry.Item1 + " - " + entry.Item2, ex);
                     }
                 }
             }
