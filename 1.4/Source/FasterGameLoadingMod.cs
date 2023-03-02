@@ -20,16 +20,13 @@ namespace FasterGameLoading
             settings = this.GetSettings<FasterGameLoadingSettings>();
             harmony = new Harmony("FasterGameLoadingMod");
             harmony.PatchAll();
-            harmony.Patch(AccessTools.DeclaredMethod(typeof(LongEventHandler), nameof(LongEventHandler.ExecuteWhenFinished)),
-                prefix: new HarmonyMethod(AccessTools.Method(typeof(Startup), nameof(Startup.DelayExecuteWhenFinished))));
 
-            // an attempt to put harmony patchings into another thread, didn't work out by some reason
-            //thread = new Thread(new ThreadStart(() =>
-            //{
-            //    var threadedHarmony = new ThreadedHarmony();
-            //    threadedHarmony.Run();
-            //}));
-            //thread.Start();
+            if (FasterGameLoadingSettings.delayLongEventActionsLoading)
+            {
+                harmony.Patch(AccessTools.DeclaredMethod(typeof(LongEventHandler), nameof(LongEventHandler.ExecuteWhenFinished)),
+                    prefix: new HarmonyMethod(AccessTools.Method(typeof(Startup), nameof(Startup.DelayExecuteWhenFinished))));
+                Startup.doNotDelayLongEventsWhenFinished = false;
+            }
         }
         public override string SettingsCategory()
         {

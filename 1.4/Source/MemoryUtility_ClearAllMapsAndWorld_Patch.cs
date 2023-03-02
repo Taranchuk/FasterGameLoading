@@ -17,38 +17,44 @@ namespace FasterGameLoading
         }
         public static void PerformPatchesIfAny()
         {
-            Log.Warning("Loading game, starting performing actions (" + FasterGameLoadingMod.delayedActions.actionsToPerform.Count() 
-                + ") and harmony patches (" + FasterGameLoadingMod.delayedActions.harmonyPatchesToPerform.Count + ") : " 
-                + DateTime.Now.ToString() + " - " + UnityData.IsInMainThread);
-            while (FasterGameLoadingMod.delayedActions.actionsToPerform.Any())
+            if (FasterGameLoadingMod.delayedActions.actionsToPerform.Any())
             {
-                var entry = FasterGameLoadingMod.delayedActions.actionsToPerform.Pop();
-                try
+                Log.Warning("Loading game, starting performing actions: " + FasterGameLoadingMod.delayedActions.actionsToPerform.Count());
+                while (FasterGameLoadingMod.delayedActions.actionsToPerform.Any())
                 {
-                    entry();
-                }
-                catch (Exception ex)
-                {
-                    Log.Error("Error performing action for " + entry.Method.FullDescription() + " - " + ex.Message);
-                }
-            }
-            while (FasterGameLoadingMod.delayedActions.harmonyPatchesToPerform.Any())
-            {
-                var entry = FasterGameLoadingMod.delayedActions.harmonyPatchesToPerform.Pop();
-                try
-                {
-                    var curTypes = AccessTools.GetTypesFromAssembly(entry.Item2).ToList();
-                    foreach (var curType in curTypes)
+                    var entry = FasterGameLoadingMod.delayedActions.actionsToPerform.Pop();
+                    try
                     {
-                        var patchProcessor = entry.Item1.CreateClassProcessor(curType);
-                        patchProcessor.Patch();
+                        entry();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("Error performing action for " + entry.Method.FullDescription() + " - " + ex.Message);
                     }
                 }
-                catch (Exception ex)
+            }
+            if (FasterGameLoadingMod.delayedActions.harmonyPatchesToPerform.Any())
+            {
+                Log.Warning("Loading game, starting performing harmony patches: " + FasterGameLoadingMod.delayedActions.harmonyPatchesToPerform.Count());
+                while (FasterGameLoadingMod.delayedActions.harmonyPatchesToPerform.Any())
                 {
-                    Log.Error("Error performing harmony patches for " + entry.Item1 + " - " + entry.Item2 + " - " + ex.Message);
+                    var entry = FasterGameLoadingMod.delayedActions.harmonyPatchesToPerform.Pop();
+                    try
+                    {
+                        var curTypes = AccessTools.GetTypesFromAssembly(entry.Item2).ToList();
+                        foreach (var curType in curTypes)
+                        {
+                            var patchProcessor = entry.harmony.CreateClassProcessor(curType);
+                            patchProcessor.Patch();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("Error performing harmony patches for " + entry.Item1 + " - " + entry.Item2 + " - " + ex.Message);
+                    }
                 }
             }
+
         }
     }
 }

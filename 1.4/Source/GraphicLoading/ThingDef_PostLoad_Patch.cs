@@ -34,11 +34,10 @@ namespace FasterGameLoading
 
         public static void ExecuteDelayed(Action action, ThingDef def)
         {
-            if (typeof(Graphic_Linked).IsAssignableFrom(def.graphicData.graphicClass) || def.graphicData.Linked)
+            if (def.graphicData.Linked || def.IsMedicine)
             {
                 var oldValue = Startup.doNotDelayLongEventsWhenFinished;
                 Startup.doNotDelayLongEventsWhenFinished = true;
-                Log.Message("Allowing: " + action.Method.FullDescription());
                 LongEventHandler.ExecuteWhenFinished(action);
                 Startup.doNotDelayLongEventsWhenFinished = oldValue;
             }

@@ -81,10 +81,10 @@
     <Compile Include="GraphicLoading\BuildableDef_PostLoad_Patch.cs" />
     <Compile Include="GraphicLoading\GraphicData_Init_Patch.cs" />
     <Compile Include="GraphicLoading\Log_Error_Patch.cs" />
-    <Compile Include="GraphicLoading\StaticConstructorOnStartupUtility_StaticConstructorOnStartupUtility_Patch.cs" />
     <Compile Include="GraphicLoading\ModContentLoaderTexture2D_LoadTexture_Patch.cs" />
     <Compile Include="GraphicLoading\TextureResize.cs" />
     <Compile Include="GraphicLoading\ThingDef_PostLoad_Patch.cs" />
+    <Compile Include="SubSoundDef_TryPlay_Patch.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

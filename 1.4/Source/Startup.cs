@@ -21,11 +21,15 @@ namespace FasterGameLoading
 
         public static void Prefix()
         {
-            FasterGameLoadingMod.harmony.Patch(AccessTools.DeclaredMethod(typeof(Harmony), nameof(Harmony.PatchAll), 
-                new Type[] { typeof(Assembly) }), prefix: new HarmonyMethod(AccessTools.Method(typeof(Startup), nameof(DelayHarmonyPatchAll))));
+            if (FasterGameLoadingSettings.delayHarmonyPatchesLoading)
+            {
+                FasterGameLoadingMod.harmony.Patch(AccessTools.DeclaredMethod(typeof(Harmony), nameof(Harmony.PatchAll),
+                    new Type[] { typeof(Assembly) }), prefix: new HarmonyMethod(AccessTools.Method(typeof(Startup), nameof(DelayHarmonyPatchAll))));
+                doNotDelayHarmonyPatches = false;
+            }
         }
 
-        public static bool doNotDelayHarmonyPatches;
+        public static bool doNotDelayHarmonyPatches = true;
         public static bool DelayHarmonyPatchAll(Harmony __instance, Assembly assembly)
         {
             if (doNotDelayHarmonyPatches) return true;
@@ -33,7 +37,7 @@ namespace FasterGameLoading
             return false;
         }
 
-        public static bool doNotDelayLongEventsWhenFinished;
+        public static bool doNotDelayLongEventsWhenFinished = true;
         public static bool DelayExecuteWhenFinished(Action action)
         {
             if (doNotDelayLongEventsWhenFinished) return true;
@@ -60,6 +64,10 @@ namespace FasterGameLoading
             FasterGameLoadingSettings.successfulXMLPathesSinceLastSession = XmlNode_SelectSingleNode_Patch.successfulXMLPathesThisSession;
             FasterGameLoadingSettings.failedXMLPathesSinceLastSession = XmlNode_SelectSingleNode_Patch.failedXMLPathesThisSession;
             LoadedModManager.GetMod<FasterGameLoadingMod>().WriteSettings();
+            LongEventHandler.toExecuteWhenFinished.Add(delegate
+            {
+                FasterGameLoadingMod.delayedActions.StartCoroutine(FasterGameLoadingMod.delayedActions.PerformActions());
+            });
         }
     }
 }
