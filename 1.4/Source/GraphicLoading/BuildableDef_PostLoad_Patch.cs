@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Reflection.Emit;
@@ -30,7 +31,7 @@ namespace FasterGameLoading
     
         public static void ExecuteDelayed(Action action, BuildableDef def)
         {
-            if (def is ThingDef thingDef && (thingDef.graphicData != null && thingDef.graphicData.Linked || thingDef.IsMedicine))
+            if (def is ThingDef thingDef && thingDef.ShouldBeLoadedImmediately())
             {
                 var oldValue = Startup.doNotDelayLongEventsWhenFinished;
                 Startup.doNotDelayLongEventsWhenFinished = true;
@@ -41,6 +42,11 @@ namespace FasterGameLoading
             {
                 FasterGameLoadingMod.delayedActions.iconsToLoad.Add((def, action));
             }
+        }
+
+        public static bool ShouldBeLoadedImmediately(this ThingDef thingDef)
+        {
+            return thingDef.graphicData != null && thingDef.graphicData.Linked || thingDef.thingCategories != null && thingDef.thingCategories.Contains(ThingCategoryDefOf.Medicine);
         }
     }
 }

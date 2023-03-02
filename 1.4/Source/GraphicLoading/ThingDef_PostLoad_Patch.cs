@@ -34,7 +34,7 @@ namespace FasterGameLoading
 
         public static void ExecuteDelayed(Action action, ThingDef def)
         {
-            if (def.graphicData.Linked || def.IsMedicine)
+            if (def.ShouldBeLoadedImmediately())
             {
                 var oldValue = Startup.doNotDelayLongEventsWhenFinished;
                 Startup.doNotDelayLongEventsWhenFinished = true;
