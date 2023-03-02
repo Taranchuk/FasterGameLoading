@@ -46,7 +46,9 @@ namespace FasterGameLoading
 
         public static bool ShouldBeLoadedImmediately(this ThingDef thingDef)
         {
-            return thingDef.graphicData != null && thingDef.graphicData.Linked || thingDef.thingCategories != null && thingDef.thingCategories.Contains(ThingCategoryDefOf.Medicine);
+            return thingDef.graphicData != null && thingDef.graphicData.Linked 
+                || typeof(Medicine).IsAssignableFrom(thingDef.thingClass) 
+                || thingDef.orderedTakeGroup?.defName == "Medicine";
         }
     }
 }

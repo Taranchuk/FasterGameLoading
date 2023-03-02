@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using RimWorld;
+using Verse;
 
 namespace FasterGameLoading
 {
@@ -9,7 +10,8 @@ namespace FasterGameLoading
         [HarmonyPriority(int.MaxValue)]
         public static void Prefix()
         {
-            MemoryUtility_ClearAllMapsAndWorld_Patch.PerformPatchesIfAny();
+            Startup.doNotDelayLongEventsWhenFinished = true;
+            LongEventHandler.ExecuteWhenFinished(MemoryUtility_ClearAllMapsAndWorld_Patch.PerformPatchesIfAny);
         }
     }
 }

@@ -192,6 +192,8 @@ namespace FasterGameLoading
             {
                 ResizeTexture(entry.Key, entry.Value);
             });
+            Log.Warning("Downscaled " + texturesToResize.Count + " textures");
+
         }
 
         public static void ResizeTexture(string path, int targetSize)

@@ -13,7 +13,8 @@ namespace FasterGameLoading
         [HarmonyPriority(int.MaxValue)]
         public static void Prefix()
         {
-            PerformPatchesIfAny();
+            Startup.doNotDelayLongEventsWhenFinished = true;
+            LongEventHandler.ExecuteWhenFinished(PerformPatchesIfAny);
         }
         public static void PerformPatchesIfAny()
         {
