@@ -46,14 +46,14 @@ namespace FasterGameLoading
                 {
                     yield return 0;
                 }
-                var action = actionsToPerform.Pop();
+                var action = actionsToPerform.PopFirst();
                 try
                 {
                     action();
                 }
                 catch (Exception ex)
                 {
-                    Error("Error loading action for " + action.Method.FullDescription(), ex);
+                    Error("Error loading action for " + action.Target + " - " + action.Method.FullDescription(), ex);
                 }
                 count++;
                 float elapsed = (float)stopwatch.ElapsedTicks / Stopwatch.Frequency;
@@ -72,7 +72,7 @@ namespace FasterGameLoading
             {
                 if (curTypes is null || !curTypes.Any())
                 {
-                    var (harmony, assembly) = harmonyPatchesToPerform.Pop();
+                    var (harmony, assembly) = harmonyPatchesToPerform.PopFirst();
                     curHarmony = harmony;
                     curAssembly = assembly;
                     curTypes = AccessTools.GetTypesFromAssembly(curAssembly).ToList();
@@ -86,7 +86,7 @@ namespace FasterGameLoading
                 {
                     try
                     {
-                        var curType = curTypes.Pop();
+                        var curType = curTypes.PopFirst();
                         var patchProcessor = curHarmony.CreateClassProcessor(curType);
                         patchProcessor.Patch();
                     }
@@ -114,7 +114,7 @@ namespace FasterGameLoading
                 {
                     yield return 0;
                 }
-                var (def, action) = graphicsToLoad.Pop();
+                var (def, action) = graphicsToLoad.PopFirst();
                 try
                 {
                     action();
@@ -147,7 +147,7 @@ namespace FasterGameLoading
                 {
                     yield return 0;
                 }
-                var (def, action) = iconsToLoad.Pop();
+                var (def, action) = iconsToLoad.PopFirst();
                 if (def.uiIcon == BaseContent.BadTex)
                 {
                     try

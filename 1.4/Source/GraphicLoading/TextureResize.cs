@@ -182,18 +182,16 @@ namespace FasterGameLoading
                             }
                         }
                     }
-                    else if (texture.Key.width > 512 || texture.Key.height > 512)
-                    {
-                        texturesToResize.Add(new(texture.Value, 512));
-                    }
                 }
             }
-            GenThreading.ParallelForEach(texturesToResize, delegate (KeyValuePair<string, int> entry)
+            if (texturesToResize.Any())
             {
-                ResizeTexture(entry.Key, entry.Value);
-            });
-            Log.Warning("Downscaled " + texturesToResize.Count + " textures");
-
+                GenThreading.ParallelForEach(texturesToResize, delegate (KeyValuePair<string, int> entry)
+                {
+                    ResizeTexture(entry.Key, entry.Value);
+                });
+                Log.Warning("Downscaled " + texturesToResize.Count + " textures");
+            }
         }
 
         public static void ResizeTexture(string path, int targetSize)

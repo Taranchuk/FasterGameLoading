@@ -86,6 +86,7 @@
     <Compile Include="GraphicLoading\TextureResize.cs" />
     <Compile Include="GraphicLoading\ThingDef_PostLoad_Patch.cs" />
     <Compile Include="SubSoundDef_TryPlay_Patch.cs" />
+    <Compile Include="Utils.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

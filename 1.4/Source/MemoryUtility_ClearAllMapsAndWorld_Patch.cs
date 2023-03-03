@@ -23,7 +23,7 @@ namespace FasterGameLoading
                 Log.Warning("Loading game, starting performing actions: " + FasterGameLoadingMod.delayedActions.actionsToPerform.Count());
                 while (FasterGameLoadingMod.delayedActions.actionsToPerform.Any())
                 {
-                    var entry = FasterGameLoadingMod.delayedActions.actionsToPerform.Pop();
+                    var entry = FasterGameLoadingMod.delayedActions.actionsToPerform.PopFirst();
                     try
                     {
                         entry();
@@ -39,7 +39,7 @@ namespace FasterGameLoading
                 Log.Warning("Loading game, starting performing harmony patches: " + FasterGameLoadingMod.delayedActions.harmonyPatchesToPerform.Count());
                 while (FasterGameLoadingMod.delayedActions.harmonyPatchesToPerform.Any())
                 {
-                    var entry = FasterGameLoadingMod.delayedActions.harmonyPatchesToPerform.Pop();
+                    var entry = FasterGameLoadingMod.delayedActions.harmonyPatchesToPerform.PopFirst();
                     try
                     {
                         var curTypes = AccessTools.GetTypesFromAssembly(entry.Item2).ToList();

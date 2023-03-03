@@ -32,7 +32,7 @@ namespace FasterGameLoading
         public static bool doNotDelayHarmonyPatches = true;
         public static bool DelayHarmonyPatchAll(Harmony __instance, Assembly assembly)
         {
-            if (doNotDelayHarmonyPatches) return true;
+            if (doNotDelayHarmonyPatches || assembly.GetName().Name == "CombatAI") return true;
             FasterGameLoadingMod.delayedActions.harmonyPatchesToPerform.Add((__instance, assembly));
             return false;
         }
@@ -50,11 +50,6 @@ namespace FasterGameLoading
             {
                 return true;
             }
-        }
-        private static void PostfixLogMethod(MethodBase __originalMethod)
-        {
-            Log.Message("Running " + __originalMethod.FullDescription());
-            Log.ResetMessageCount();
         }
         public static void Postfix()
         {

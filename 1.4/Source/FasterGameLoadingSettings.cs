@@ -34,7 +34,7 @@ namespace FasterGameLoading
         {
             var ls = new Listing_Standard();
             ls.Begin(new Rect(inRect.x, inRect.y, inRect.width, 500));
-            ls.CheckboxLabeled("Load mod content early during game idling periods. When enabled, the game might become not responsible during loading, but it's expected. Disable this if you will encounter any issues.", ref earlyModContentLoading);
+            ls.CheckboxLabeled("Load mod content early during game idling periods. When enabled, the game might become not responsive during loading, but it's expected. Disable this if you will encounter any issues.", ref earlyModContentLoading);
             ls.CheckboxLabeled("Prevent long event loading during startup and load them gradually during playing. Will cut some time off during loading, however it might be not stable and error prone. Disable this if you will encounter any issues.", ref delayLongEventActionsLoading);
             ls.CheckboxLabeled("Prevent harmony patches loading during startup and load them gradually during playing. Will cut some time off during loading, however it might be not stable and error prone. Disable this if you will encounter any issues.", ref delayHarmonyPatchesLoading);
             ls.CheckboxLabeled("Prevent graphic and icon loading during startup and load them gradually during playing. Will cut some time off during loading, however it might be not stable and error prone. Disable this if you will encounter any issues.", ref delayGraphicLoading);
@@ -53,7 +53,10 @@ namespace FasterGameLoading
                 "\nTerrain - 1024px";
             if (ls.ButtonTextLabeled(explanation, "Downscale textures"))
             {
-                TextureResize.DoTextureResizing();
+                Find.WindowStack.Add(new Dialog_MessageBox("Perform texture downscaling? It can be reverted by redownloading mods.", "Confirm".Translate(), delegate
+                {
+                    TextureResize.DoTextureResizing();
+                }, "GoBack".Translate()));
             }
             ls.End();
         }
