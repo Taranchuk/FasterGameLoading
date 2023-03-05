@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Xml;
-using Verse;
 
 namespace FasterGameLoading
 {
@@ -40,19 +39,5 @@ namespace FasterGameLoading
             }
         }
     }
-
-    //[StaticConstructorOnStartup]
-    //public static class XPathProfiler
-    //{
-    //    static XPathProfiler()
-    //    {
-    //        Log.Warning("Analyzing xpathes: " + XmlNode_SelectSingleNode_Patch.stopwatches.Count);
-    //        foreach (var data in XmlNode_SelectSingleNode_Patch.stopwatches.OrderByDescending(x => x.Value.stopwatch.ElapsedTicks))
-    //        {
-    //            var elapsed = (float)data.Value.stopwatch.ElapsedTicks / Stopwatch.Frequency;
-    //            Log.Message(data.Key + " took " + elapsed + " with result: " + data.Value.result);
-    //        }
-    //    }
-    //}
 }
 
