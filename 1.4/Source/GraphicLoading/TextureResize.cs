@@ -175,11 +175,15 @@ namespace FasterGameLoading
                         }
                         else if (value.Key is ThingDef thingDef)
                         {
-                            var type = GetTextureType(thingDef);
-                            if (targetSizes.TryGetValue(type, out var targetSize) && (texture.Key.width > targetSize || texture.Key.height > targetSize))
+                            if (thingDef.graphicData.drawSize.x + thingDef.graphicData.drawSize.y <= 8)
                             {
-                                texturesToResize.Add(new(texture.Value, targetSize));
+                                var type = GetTextureType(thingDef);
+                                if (targetSizes.TryGetValue(type, out var targetSize) && (texture.Key.width > targetSize || texture.Key.height > targetSize))
+                                {
+                                    texturesToResize.Add(new(texture.Value, targetSize));
+                                }
                             }
+
                         }
                     }
                 }
@@ -360,7 +364,7 @@ namespace FasterGameLoading
         }
         private static void GetMatTexture(TextureType type, BuildableDef def, Material mat)
         {
-            if (mat != null && texturesByPaths.TryGetValue(mat.mainTexture, out var fullPath))
+            if (mat?.mainTexture != null && texturesByPaths.TryGetValue(mat.mainTexture, out var fullPath))
             {
                 AddEntry(type, def, fullPath, mat.mainTexture);
                 Texture2D mask = null;
