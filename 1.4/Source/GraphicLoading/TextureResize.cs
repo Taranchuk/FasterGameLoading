@@ -173,7 +173,7 @@ namespace FasterGameLoading
                                 texturesToResize.Add(new(texture.Value, targetSizes[TextureType.Terrain]));
                             }
                         }
-                        else if (value.Key is ThingDef thingDef)
+                        else if (value.Key is ThingDef thingDef && thingDef.graphicData != null)
                         {
                             if (thingDef.graphicData.drawSize.x + thingDef.graphicData.drawSize.y <= 8)
                             {
@@ -183,7 +183,6 @@ namespace FasterGameLoading
                                     texturesToResize.Add(new(texture.Value, targetSize));
                                 }
                             }
-
                         }
                     }
                 }

@@ -36,10 +36,7 @@ namespace FasterGameLoading
         {
             if (def.ShouldBeLoadedImmediately())
             {
-                var oldValue = Startup.doNotDelayLongEventsWhenFinished;
-                Startup.doNotDelayLongEventsWhenFinished = true;
                 LongEventHandler.ExecuteWhenFinished(action);
-                Startup.doNotDelayLongEventsWhenFinished = oldValue;
             }
             else
             {

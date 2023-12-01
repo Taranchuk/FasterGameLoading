@@ -63,7 +63,6 @@
   <ItemGroup>
     <Compile Include="DelayedActions.cs" />
     <Compile Include="FasterGameLoadingSettings.cs" />
-    <Compile Include="MemoryUtility_ClearAllMapsAndWorld_Patch.cs" />
     <Compile Include="Misc\DisableLogObsoleteMethodPatchErrors.cs" />
     <Compile Include="Misc\GlobalTextureAtlasManager_BakeStaticAtlases_Patch.cs" />
     <Compile Include="Misc\GlobalTextureAtlasManager_TryInsertStatic_Patch.cs" />
@@ -77,7 +76,6 @@
     <Compile Include="Misc\StaticConstructorOnStartupUtility_ReportProbablyMissingAttributes_Patch.cs" />
     <Compile Include="FasterGameLoadingMod.cs" />
     <Compile Include="ReflectionOptimizations\GenTypes_GetTypeInAnyAssemblyInt_Patch.cs" />
-    <Compile Include="Scenario_PreConfigure_Patch.cs" />
     <Compile Include="Startup.cs" />
     <Compile Include="GraphicLoading\BuildableDef_PostLoad_Patch.cs" />
     <Compile Include="GraphicLoading\GraphicData_Init_Patch.cs" />
@@ -85,7 +83,6 @@
     <Compile Include="GraphicLoading\ModContentLoaderTexture2D_LoadTexture_Patch.cs" />
     <Compile Include="GraphicLoading\TextureResize.cs" />
     <Compile Include="GraphicLoading\ThingDef_PostLoad_Patch.cs" />
-    <Compile Include="SubSoundDef_TryPlay_Patch.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>
   <ItemGroup />

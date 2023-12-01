@@ -19,38 +19,6 @@ namespace FasterGameLoading
                 : (MethodBase)AccessTools.Method(typeof(StaticConstructorOnStartupUtility), "CallAll");
         }
 
-        public static void Prefix()
-        {
-            if (FasterGameLoadingSettings.delayHarmonyPatchesLoading)
-            {
-                FasterGameLoadingMod.harmony.Patch(AccessTools.DeclaredMethod(typeof(Harmony), nameof(Harmony.PatchAll),
-                    new Type[] { typeof(Assembly) }), prefix: new HarmonyMethod(AccessTools.Method(typeof(Startup), nameof(DelayHarmonyPatchAll))));
-                doNotDelayHarmonyPatches = false;
-            }
-        }
-
-        public static bool doNotDelayHarmonyPatches = true;
-        public static bool DelayHarmonyPatchAll(Harmony __instance, Assembly assembly)
-        {
-            if (doNotDelayHarmonyPatches || assembly.GetName().Name == "CombatAI") return true;
-            FasterGameLoadingMod.delayedActions.harmonyPatchesToPerform.Add((__instance, assembly));
-            return false;
-        }
-
-        public static bool doNotDelayLongEventsWhenFinished = true;
-        public static bool DelayExecuteWhenFinished(Action action)
-        {
-            if (doNotDelayLongEventsWhenFinished) return true;
-            if (action.Method.Name.Contains("DoPlayLoad") is false && action.Method.DeclaringType.Assembly == typeof(Game).Assembly)
-            {
-                FasterGameLoadingMod.delayedActions.actionsToPerform.Add(action);
-                return false;
-            }
-            else
-            {
-                return true;
-            }
-        }
         public static void Postfix()
         {
             FasterGameLoadingSettings.modsInLastSession = ModsConfig.ActiveModsInLoadOrder.Select(x => x.packageIdLowerCase).ToList();
