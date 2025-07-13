@@ -1,4 +1,4 @@
-using HarmonyLib;
+﻿using HarmonyLib;
 using RimWorld;
 using System;
 using System.Collections;
@@ -22,7 +22,7 @@ namespace FasterGameLoading
             if (FasterGameLoadingSettings.earlyModContentLoading)
             {
                 var modToLoad = LoadedModManager.RunningMods.Where(x =>
-                    ModContentPack_ReloadContentInt_Patch.loadedMods.ContainsKey(x) is false).FirstOrDefault();
+                    ModContentPack_ReloadContentInt_Patch.loadedMods.Contains(x) is false).FirstOrDefault();
                 if (modToLoad != null)
                 {
                     modToLoad.ReloadContentInt();

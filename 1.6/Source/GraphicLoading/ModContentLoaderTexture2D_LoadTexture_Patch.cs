@@ -8,13 +8,11 @@ using Verse;
 
 namespace FasterGameLoading
 {
-    [HarmonyPatch(typeof(ModContentLoader<Texture2D>), "LoadTexture")]
+ [HarmonyPatch(typeof(ModContentLoader<Texture2D>), "LoadTexture")]
     public static class ModContentLoaderTexture2D_LoadTexture_Patch
     {
         public static Dictionary<string, string> loadedTexturesThisSession = new Dictionary<string, string>();
         public static Dictionary<string, Texture2D> savedTextures = new Dictionary<string, Texture2D>();
-        
-        [HarmonyPriority(int.MaxValue)]
         public static bool Prefix(VirtualFile file, out bool __state, ref Texture2D __result)
         {
             var fullPath = file.FullPath;
@@ -23,7 +21,7 @@ namespace FasterGameLoading
                 __state = false;
                 return false;
             }
-            
+
             __state = true;
             var index = fullPath.IndexOf("Textures\\");
             if (index >= 0)
