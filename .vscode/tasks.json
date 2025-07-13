@@ -1,0 +1,27 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+		{
+			"label": "SaveAllFiles",
+			"command": "${command:workbench.action.files.saveAll}",
+			"type": "shell",
+			"problemMatcher": []
+		},
+        {
+            "label": "build",
+            "type": "process",
+            "command": "dotnet",
+            "args": [
+                "build",
+                "${workspaceFolder}/1.6/Source/FasterGameLoading.csproj"
+            ],
+            "problemMatcher": "$msCompile",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+			"dependsOrder": "sequence",
+            "dependsOn": "SaveAllFiles"
+        }
+    ]
+}
