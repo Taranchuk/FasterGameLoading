@@ -11,6 +11,17 @@ namespace FasterGameLoading
             list.RemoveAt(0);
             return currentFirst;
         }
+        public static List<Thing> ThingsOfDefs(this ListerThings listerThings,IEnumerable<ThingDef> defs) {
+            List<Thing> outThings = [];
+            foreach (var def in defs) {
+                if (listerThings.listsByDef.TryGetValue(def, out var things))
+                {
+                    outThings.AddRange(things);
+                }
+                
+            }
+            return outThings;
+        }
     }
 }
 
