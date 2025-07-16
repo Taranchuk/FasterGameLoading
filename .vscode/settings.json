@@ -1,3 +1,7 @@
 {
-    "dotnet.defaultSolution": "1.6/Source/FasterGameLoading.sln"
+    "dotnet.defaultSolution": "1.6/Source/FasterGameLoading.sln",
+    "files.exclude": {
+        "**/1.4/": true,
+        "**/1.5/": true
+    }
 }
