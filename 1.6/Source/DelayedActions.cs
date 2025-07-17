@@ -29,6 +29,7 @@ namespace FasterGameLoading
                 if (modToLoad != null)
                 {
                     modToLoad.ReloadContentInt();
+                    ModContentPack_ReloadContentInt_Patch.loadedMods.Add(modToLoad);
                 }
             }
         }
