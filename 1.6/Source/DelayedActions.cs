@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using RimWorld;
 using System;
 using System.Collections;
@@ -73,68 +73,84 @@ namespace FasterGameLoading
             {
                 AllGraphicLoaded = true;//Icon Doesn't matter
                 Log.Warning("Starting baking StaticAtlases - " + DateTime.Now.ToString());
-                #region BakeAtlas
-                int pixels = 0;
-                List<(Texture2D main, Texture2D mask)> currentBatch = [];
-                Queue<(TextureAtlasGroupKey key, List<(Texture2D main, Texture2D mask)> batch)> atlases = [];
+                #region BakeAtlas (Adaptive)
+                const float TARGET_BAKE_TIME_SECONDS = 0.008f;
+                const float ADAPTATION_FACTOR = 0.2f;
+                const int INITIAL_PIXELS_PER_SLICE = 64 * 64;
+                const int MIN_PIXELS_PER_SLICE = 32 * 32;
+                const int MAX_PIXELS_PER_SLICE = 2048 * 2048;
+                float measuredBakeSpeed_PixelsPerSecond = 2_000_000f;
+                int adaptivePixelsPerSlice = INITIAL_PIXELS_PER_SLICE;
 
-                //20 is my personal experience, 0.8*(maxTextureSize/4)^2 to make textures fit better in atlas
-                int MaxPixelsPerAtlas = SystemInfo.maxTextureSize * SystemInfo.maxTextureSize / 20;
-                //Seperating each bake to different update to avoid freezing, but may cause screen tearing
-                stopwatch.Restart();
+                var bakeStopwatch = new Stopwatch();
+
                 foreach (var kvp in GlobalTextureAtlasManager.buildQueue)
                 {
-                    bool hasMask = kvp.Key.hasMask;
-                    foreach (Texture2D texture in kvp.Value.Item1)
-                    {
-                        int size = texture.width * texture.height;
-                        if (size + pixels > MaxPixelsPerAtlas)
-                        {
-                            atlases.Enqueue((kvp.Key, currentBatch));
-                            pixels = 0;
-                            currentBatch = [];
-                        }
-                        pixels += size;
-                        Texture2D mask = hasMask
-                            && GlobalTextureAtlasManager.buildQueueMasks
-                            .TryGetValue(texture, out var m) ? m : null;
+                    var key = kvp.Key;
+                    var allTexturesForThisGroup = kvp.Value.Item1;
 
-                        currentBatch.Add((texture, mask));
-                    }
-                    atlases.Enqueue((kvp.Key, currentBatch));
-                    pixels = 0;
-                    currentBatch = [];
-                }
+                    int pixelsInCurrentSlice = 0;
+                    var batchForNextBake = new List<(Texture2D main, Texture2D mask)>();
 
-                while (atlases.Any())
-                {
-                    if (!UnityData.IsInMainThread)
+                    foreach (Texture2D texture in allTexturesForThisGroup)
                     {
-                        yield return 0;
-                    }
-                    var (key, batch) = atlases.Dequeue();
-                    StaticTextureAtlas staticTextureAtlas = new(key);
-                    foreach (var (main, mask) in batch)
-                    {
-                        staticTextureAtlas.textures.Add(main);
-                        if (mask != null)
+                        Texture2D mask = key.hasMask && GlobalTextureAtlasManager.buildQueueMasks.TryGetValue(texture, out var m) ? m : null;
+                        batchForNextBake.Add((texture, mask)); 
+                        pixelsInCurrentSlice += texture.width * texture.height;
+                        if (pixelsInCurrentSlice >= adaptivePixelsPerSlice)
                         {
-                            staticTextureAtlas.masks.Add(main, mask);
+                            var staticTextureAtlas = new StaticTextureAtlas(key);
+                            foreach (var (main, msk) in batchForNextBake) 
+                            { 
+                                staticTextureAtlas.Insert(main, msk);
+                            }
+
+                            bakeStopwatch.Restart();
+                            staticTextureAtlas.Bake();
+                            bakeStopwatch.Stop();
+
+                            GlobalTextureAtlasManager.staticTextureAtlases.Add(staticTextureAtlas);
+                            double secondsElapsed = bakeStopwatch.Elapsed.TotalSeconds;
+                            if (secondsElapsed > 0)
+                            {
+                                float latestBakeSpeed = (float)(pixelsInCurrentSlice / secondsElapsed);
+                                measuredBakeSpeed_PixelsPerSecond = Mathf.Lerp(measuredBakeSpeed_PixelsPerSecond, latestBakeSpeed, ADAPTATION_FACTOR);
+                                float newSliceSize = measuredBakeSpeed_PixelsPerSecond * TARGET_BAKE_TIME_SECONDS;
+                                adaptivePixelsPerSlice = (int)Mathf.Clamp(newSliceSize, MIN_PIXELS_PER_SLICE, MAX_PIXELS_PER_SLICE);
+                            }
+                            yield return null;
+                            batchForNextBake.Clear();
+                            pixelsInCurrentSlice = 0;
                         }
                     }
-                    staticTextureAtlas.Bake();
-                    GlobalTextureAtlasManager.staticTextureAtlases.Add(staticTextureAtlas);
-                    if (ElapsedMaxImpact)
+                    if (batchForNextBake.Any())
                     {
-                        yield return 0;
-                        stopwatch.Restart();
+                        var staticTextureAtlas = new StaticTextureAtlas(key);
+                        foreach (var (main, msk) in batchForNextBake) 
+                        { 
+                            staticTextureAtlas.Insert(main, msk); 
+                        }
+
+                        bakeStopwatch.Restart();
+                        staticTextureAtlas.Bake();
+                        bakeStopwatch.Stop();
+
+                        GlobalTextureAtlasManager.staticTextureAtlases.Add(staticTextureAtlas);
+                        double secondsElapsed = bakeStopwatch.Elapsed.TotalSeconds;
+                        if (secondsElapsed > 0)
+                        {
+                            float latestBakeSpeed = (float)(pixelsInCurrentSlice / secondsElapsed);
+                            measuredBakeSpeed_PixelsPerSecond = Mathf.Lerp(measuredBakeSpeed_PixelsPerSecond, latestBakeSpeed, ADAPTATION_FACTOR);
+                            float newSliceSize = measuredBakeSpeed_PixelsPerSecond * TARGET_BAKE_TIME_SECONDS;
+                            adaptivePixelsPerSlice = (int)Mathf.Clamp(newSliceSize, MIN_PIXELS_PER_SLICE, MAX_PIXELS_PER_SLICE);
+                        }
+
+                        yield return null;
                     }
-                    
                 }
                 #endregion
                 Log.Warning("Finished baking StaticAtlases - " + DateTime.Now.ToString());
             }
-            //then update mesh
             if (Current.Game != null)
             {
                 foreach (var map in Find.Maps)
