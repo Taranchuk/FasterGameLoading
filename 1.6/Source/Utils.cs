@@ -22,6 +22,12 @@ namespace FasterGameLoading
             }
             return outThings;
         }
+        public static int FloorToPowerOfTwo(this int i)
+        {
+            int closest = UnityEngine.Mathf.ClosestPowerOfTwo(i);
+            return closest <= i ? closest : closest >> 1;
+
+        }
     }
 }
 
