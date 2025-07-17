@@ -14,7 +14,7 @@ namespace FasterGameLoading
 {
     public class DelayedActions : MonoBehaviour
     {
-        public float MaxImpactThisFrame => Current.Game != null ? 0.001f : 0.03f;
+        public float MaxImpactThisFrame => Current.Game != null ? 0.001f : 0.05f;
         public List<(ThingDef def, Action action)> graphicsToLoad = new();
         public List<(BuildableDef def, Action action)> iconsToLoad = new();
         public Queue<(SubSoundDef def, Action action)> subSoundDefToResolve = new();
@@ -80,7 +80,7 @@ namespace FasterGameLoading
                 const float TARGET_BAKE_TIME_SECONDS = 0.008f;
                 const float ADAPTATION_FACTOR = 0.2f;
                 // Player won't notice this initial lag (Hopefully) 
-                const int INITIAL_PIXELS_PER_SLICE = 2048 * 2048;
+                const int INITIAL_PIXELS_PER_SLICE = 1024 * 1024;
                 // I dont think atlas smaller than 1024x makes any sense for render optimization
                 // the original 64x will logs out every texture divided
                 // use ShowMoreActions/DumpStaticAtlases while in game map to see dumped atlases
