@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using Verse;
+using Verse.Sound;
 
 namespace FasterGameLoading
 {
@@ -16,6 +17,7 @@ namespace FasterGameLoading
         public float MaxImpactThisFrame => Current.Game != null ? 0.001f : 0.03f;
         public List<(ThingDef def, Action action)> graphicsToLoad = new();
         public List<(BuildableDef def, Action action)> iconsToLoad = new();
+        public Queue<(SubSoundDef def, Action action)> subSoundDefToResolve = new();
 
         public static bool AllGraphicLoaded = false;
         private Stopwatch stopwatch = new();
@@ -213,8 +215,34 @@ namespace FasterGameLoading
                     }
                 }
             }
-            stopwatch.Stop();
+            
             Log.Warning("Finished loading icons - " + DateTime.Now.ToString());
+
+            count = 0;
+            Log.Warning("Starting resolving SubSoundDefs: " + subSoundDefToResolve.Count + " - " + DateTime.Now.ToString());
+            while (subSoundDefToResolve.Any())
+            {
+                var (def, action) = subSoundDefToResolve.Dequeue();
+                try
+                {
+                    action();
+                }
+                catch (Exception ex)
+                {
+                    Error("Error resolving AudioGrain for " + def, ex);
+                }
+                count++;
+                if (ElapsedMaxImpact)
+                {
+                    count = 0;
+                    yield return 0;
+                    stopwatch.Restart();
+                }
+            }
+            SoundStarter_Patch.Unpatch();
+            Log.Warning("Finished resolving SubSoundDefs - " + DateTime.Now.ToString());
+            
+            stopwatch.Stop();
             this.enabled = false;
             yield return null;
         }
