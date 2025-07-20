@@ -13,19 +13,22 @@ namespace FasterGameLoading
         {
             LongEventHandler.ExecuteWhenFinished(delegate
             {
-                while (FasterGameLoadingMod.delayedActions.subSoundDefToResolve.Any())
+                if (FasterGameLoadingMod.delayedActions.subSoundDefToResolve.Count > 0)
                 {
-                    var (def, action) = FasterGameLoadingMod.delayedActions.subSoundDefToResolve.Dequeue();
-                    try
+                    while (FasterGameLoadingMod.delayedActions.subSoundDefToResolve.Any())
                     {
-                        action();
+                        var (def, action) = FasterGameLoadingMod.delayedActions.subSoundDefToResolve.Dequeue();
+                        try
+                        {
+                            action();
+                        }
+                        catch (Exception ex)
+                        {
+                            FasterGameLoadingMod.delayedActions.Error("Error resolving AudioGrain for " + def, ex);
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        FasterGameLoadingMod.delayedActions.Error("Error resolving AudioGrain for " + def, ex);
-                    }
+                    SoundStarter_Patch.Unpatch();
                 }
-                SoundStarter_Patch.Unpatch();
             });
         }
     }
