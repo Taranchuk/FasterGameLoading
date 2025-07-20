@@ -1,4 +1,3 @@
-using HarmonyLib;
 using RimWorld;
 using System;
 using System.Collections;
@@ -12,6 +11,7 @@ using Verse.Sound;
 
 namespace FasterGameLoading
 {
+
     public class DelayedActions : MonoBehaviour
     {
         public float MaxImpactThisFrame => Current.Game != null ? 0.001f : 0.05f;
@@ -91,7 +91,7 @@ namespace FasterGameLoading
                 // Personal Experience 0.7-0.9 can reduce empty spaces in a texture atlas
                 const float PACK_DENSITY = 0.8f;
 
-                float measuredBakeSpeed_PixelsPerSecond = 2_000_000f; 
+                float measuredBakeSpeed_PixelsPerSecond = 2_000_000f;
                 int adaptivePixelsPerSlice = INITIAL_PIXELS_PER_SLICE;
 
                 var bakeStopwatch = new Stopwatch();
@@ -107,7 +107,7 @@ namespace FasterGameLoading
                     foreach (Texture2D texture in allTexturesForThisGroup)
                     {
                         Texture2D mask = key.hasMask && GlobalTextureAtlasManager.buildQueueMasks.TryGetValue(texture, out var m) ? m : null;
-                        batchForNextBake.Add((texture, mask)); 
+                        batchForNextBake.Add((texture, mask));
                         pixelsInCurrentSlice += texture.width * texture.height;
                         if (pixelsInCurrentSlice >= adaptivePixelsPerSlice)
                         {
@@ -164,7 +164,7 @@ namespace FasterGameLoading
                             //First make it rectangle, then apply density to it
                             adaptivePixelsPerSlice = (int)
                                 (((int)Mathf.Clamp(newSliceSize, MIN_PIXELS_PER_SLICE, MAX_PIXELS_PER_SLICE))
-                                .FloorToPowerOfTwo() * PACK_DENSITY); 
+                                .FloorToPowerOfTwo() * PACK_DENSITY);
                         }
                     }
                 }
@@ -185,7 +185,7 @@ namespace FasterGameLoading
                 }
             }
 
-            count = 0; 
+            count = 0;
 
             Log.Warning("Starting loading icons: " + iconsToLoad.Count + " - " + DateTime.Now.ToString());
             while (iconsToLoad.Any())
@@ -206,7 +206,7 @@ namespace FasterGameLoading
                         Error("Error loading icon for " + def, ex);
                     }
                     count++;
-                   
+
                     if (ElapsedMaxImpact)
                     {
                         count = 0;
@@ -215,7 +215,7 @@ namespace FasterGameLoading
                     }
                 }
             }
-            
+
             Log.Warning("Finished loading icons - " + DateTime.Now.ToString());
 
             count = 0;
@@ -241,7 +241,7 @@ namespace FasterGameLoading
             }
             SoundStarter_Patch.Unpatch();
             Log.Warning("Finished resolving SubSoundDefs - " + DateTime.Now.ToString());
-            
+
             stopwatch.Stop();
             this.enabled = false;
             yield return null;
