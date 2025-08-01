@@ -1,5 +1,4 @@
 using HarmonyLib;
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Reflection.Emit;
@@ -7,14 +6,14 @@ using Verse;
 
 namespace FasterGameLoading
 {
-    [HarmonyPatch(typeof(BuildableDef), "PostLoad")]
-    public static class BuildableDef_PostLoad_Patch
+    [HarmonyPatch(typeof(TerrainDef), "PostLoad")]
+    public static class TerrainDef_PostLoad_Patch
     {
         public static bool Prepare() => FasterGameLoadingSettings.delayGraphicLoading;
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> codeInstructions)
         {
             var execute = AccessTools.Method(typeof(LongEventHandler), nameof(LongEventHandler.ExecuteWhenFinished));
-            var executeDelayed = AccessTools.Method(typeof(BuildableDef_PostLoad_Patch), nameof(ExecuteDelayed));
+            var executeDelayed = AccessTools.Method(typeof(TerrainDef_PostLoad_Patch), nameof(ExecuteDelayed));
             foreach (var code in codeInstructions)
             {
                 if (code.Calls(execute))
@@ -29,16 +28,9 @@ namespace FasterGameLoading
             }
         }
 
-        public static void ExecuteDelayed(Action action, BuildableDef def)
+        public static void ExecuteDelayed(Action action, TerrainDef def)
         {
-            if (def is ThingDef thingDef && GraphicLoadingUtils.ShouldBeLoadedImmediately(thingDef))
-            {
-                LongEventHandler.ExecuteWhenFinished(action);
-            }
-            else
-            {
-                FasterGameLoadingMod.delayedActions.iconsToLoad.Enqueue((def, action));
-            }
+            FasterGameLoadingMod.delayedActions.terrainGraphicsToLoad.Enqueue((def, action));
         }
     }
 }

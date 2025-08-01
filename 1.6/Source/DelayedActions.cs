@@ -11,246 +11,350 @@ using Verse.Sound;
 
 namespace FasterGameLoading
 {
-
     public class DelayedActions : MonoBehaviour
     {
-        public float MaxImpactThisFrame => Current.Game != null ? 0.001f : 0.05f;
-        public List<(ThingDef def, Action action)> graphicsToLoad = new();
-        public List<(BuildableDef def, Action action)> iconsToLoad = new();
+        public float MaxImpactThisFrame => 0.05f;
+        public Queue<(ThingDef def, Action action)> thingGraphicsToLoad = new();
+        public Queue<(TerrainDef def, Action action)> terrainGraphicsToLoad = new();
+        public Queue<(BuildableDef def, Action action)> iconsToLoad = new();
         public Queue<(SubSoundDef def, Action action)> subSoundDefToResolve = new();
-
         public static bool AllGraphicLoaded = false;
+        public static List<ThingDef> loadedThingDefsForMapRefresh = new();
+        public static List<TerrainDef> loadedTerrainDefsForMapRefresh = new();
+        private List<ProgressTracker> progressTrackers = new List<ProgressTracker>();
         private Stopwatch stopwatch = new();
         private bool ElapsedMaxImpact => (float)stopwatch.ElapsedTicks / Stopwatch.Frequency >= MaxImpactThisFrame;
+        public static bool coroutineRunning = false;
+        private bool gameInitializationBegan = false;
+
+        public static void StartCoroutine()
+        {
+            if (!coroutineRunning)
+            {
+                coroutineRunning = true;
+                FasterGameLoadingMod.delayedActions.StartCoroutine(FasterGameLoadingMod.delayedActions.PerformActions());
+            }
+        }
+
         public void LateUpdate()
         {
             if (FasterGameLoadingSettings.earlyModContentLoading)
             {
-                var modToLoad = LoadedModManager.RunningMods.Where(x =>
-                    ModContentPack_ReloadContentInt_Patch.loadedMods.Contains(x) is false).FirstOrDefault();
+                var modToLoad = LoadedModManager.RunningMods.FirstOrDefault(x => !ModContentPack_ReloadContentInt_Patch.loadedMods.Contains(x));
                 if (modToLoad != null)
                 {
                     modToLoad.ReloadContentInt();
                     ModContentPack_ReloadContentInt_Patch.loadedMods.Add(modToLoad);
                 }
             }
+
+            if (gameInitializationBegan is false && Current.Game != null)
+            {
+                gameInitializationBegan = true;
+                StopCoroutine(nameof(PerformActions));
+                LongEventHandler.ExecuteWhenFinished(FinalizeLoading);
+            }
         }
 
+        private class ProgressTracker
+        {
+            public string label;
+            public int total;
+            public int processed;
+            public float Progress => total > 0 ? (float)processed / total : 0f;
+        }
+
+        public void OnGUI()
+        {
+            if (coroutineRunning is false || !progressTrackers.Any())
+            {
+                return;
+            }
+
+            float barWidth = 300f;
+            float barHeight = 32f;
+            float x = 15;
+            float y = 15;
+
+            var originalColor = GUI.color;
+            foreach (var tracker in progressTrackers)
+            {
+                if (tracker.total > 0 && tracker.processed < tracker.total)
+                {
+                    var rect = new Rect(x, y, barWidth, barHeight);
+                    GUI.color = Color.green;
+                    Widgets.FillableBar(rect, tracker.Progress, BaseContent.WhiteTex);
+                    GUI.color = originalColor;
+                    Text.Anchor = TextAnchor.MiddleCenter;
+                    Widgets.Label(rect, $"Loading {tracker.label}: {tracker.processed} / {tracker.total}");
+                    Text.Anchor = TextAnchor.UpperLeft;
+                    y += barHeight + 5f;
+                }
+            }
+        }
         public IEnumerator PerformActions()
         {
             stopwatch.Start();
-            var count = 0;
-            Log.Warning("Starting loading graphics: " + graphicsToLoad.Count + " - " + DateTime.Now.ToString());
-            List<ThingDef> loadedDefs = [];
-            while (graphicsToLoad.Any())
-            {
-                if (UnityData.IsInMainThread is false)
-                {
-                    yield return 0;
-                }
-                var (def, action) = graphicsToLoad.PopFirst();
-                try
-                {
-                    action();
-                    loadedDefs.Add(def);
-                }
-                catch (Exception ex)
-                {
-                    Error("Error loading graphic for " + def, ex);
-                }
-                count++;
-                if (ElapsedMaxImpact)
-                {
-                    count = 0;
-                    yield return 0;
-                    stopwatch.Restart();
-                }
 
-                if (def.plant != null)
-                {
-                    def.plant.PostLoadSpecial(def);
-                }
-            }
-            Log.Warning("Finished loading graphics - " + DateTime.Now.ToString());
+            var graphicsProgress = new ProgressTracker { label = "thing graphics" };
+            progressTrackers.Add(graphicsProgress);
+            yield return StartCoroutine(ProcessQueueIncrementally(thingGraphicsToLoad, (d, a) => ProcessSingleGraphic(d, a), graphicsProgress));
+
+            var terrainProgress = new ProgressTracker { label = "terrain graphics" };
+            progressTrackers.Add(terrainProgress);
+            yield return StartCoroutine(ProcessQueueIncrementally(terrainGraphicsToLoad, (d, a) => ProcessSingleTerrainGraphic(d, a), terrainProgress));
+
             if (!FasterGameLoadingSettings.disableStaticAtlasesBaking)
             {
-                AllGraphicLoaded = true;//Icon Doesn't matter
-                Log.Warning("Starting baking StaticAtlases - " + DateTime.Now.ToString());
-                #region BakeAtlas (Adaptive)
-                const float TARGET_BAKE_TIME_SECONDS = 0.008f;
-                const float ADAPTATION_FACTOR = 0.2f;
-                // Player won't notice this initial lag (Hopefully) 
-                const int INITIAL_PIXELS_PER_SLICE = 1024 * 1024;
-                // I dont think atlas smaller than 1024x makes any sense for render optimization
-                // the original 64x will logs out every texture divided
-                // use ShowMoreActions/DumpStaticAtlases while in game map to see dumped atlases
-                // dont know why we cant use this action in main menu
-                const int MIN_PIXELS_PER_SLICE = 1024 * 1024;
-                // For those who have good gpus
-                const int MAX_PIXELS_PER_SLICE = 4096 * 4096;
-                // Personal Experience 0.7-0.9 can reduce empty spaces in a texture atlas
-                const float PACK_DENSITY = 0.8f;
-
-                float measuredBakeSpeed_PixelsPerSecond = 2_000_000f;
-                int adaptivePixelsPerSlice = INITIAL_PIXELS_PER_SLICE;
-
-                var bakeStopwatch = new Stopwatch();
-
-                foreach (var kvp in GlobalTextureAtlasManager.buildQueue)
-                {
-                    var key = kvp.Key;
-                    var allTexturesForThisGroup = kvp.Value.Item1;
-
-                    int pixelsInCurrentSlice = 0;
-                    var batchForNextBake = new List<(Texture2D main, Texture2D mask)>();
-
-                    foreach (Texture2D texture in allTexturesForThisGroup)
-                    {
-                        Texture2D mask = key.hasMask && GlobalTextureAtlasManager.buildQueueMasks.TryGetValue(texture, out var m) ? m : null;
-                        batchForNextBake.Add((texture, mask));
-                        pixelsInCurrentSlice += texture.width * texture.height;
-                        if (pixelsInCurrentSlice >= adaptivePixelsPerSlice)
-                        {
-                            FlushBatch();
-                            yield return null;
-                            batchForNextBake.Clear();
-                            pixelsInCurrentSlice = 0;
-                        }
-                    }
-                    if (batchForNextBake.Any())
-                    {
-                        FlushBatch();
-
-                        yield return null;
-                    }
-                    void FlushBatch()
-                    {
-                        var staticTextureAtlas = new StaticTextureAtlas(key);
-                        // Bake doesn't work when have only 1 texture, it just stopped here
-                        // Make it use the original texture
-                        // not sure how to remove texture from using static atlas
-                        // and yes, because of it, using the initial 64x setup actually never bake the atlases
-                        // No baking, No tearing
-                        if (batchForNextBake.Count == 1)
-                        {
-                            staticTextureAtlas.colorTexture = batchForNextBake.First().main;
-                            if (key.hasMask)
-                            {
-                                staticTextureAtlas.maskTexture = batchForNextBake.First().mask;
-                            }
-                            staticTextureAtlas.BuildMeshesForUvs([new(0, 0, 1, 1)]);
-                            bakeStopwatch.Reset();
-                        }
-                        else
-                        {
-                            foreach (var (main, msk) in batchForNextBake)
-                            {
-                                staticTextureAtlas.Insert(main, msk);
-                            }
-
-                            bakeStopwatch.Restart();
-                            staticTextureAtlas.Bake();
-                            bakeStopwatch.Stop();
-                        }
-
-
-                        GlobalTextureAtlasManager.staticTextureAtlases.Add(staticTextureAtlas);
-                        double secondsElapsed = bakeStopwatch.Elapsed.TotalSeconds;
-                        if (secondsElapsed > 0)
-                        {
-                            float latestBakeSpeed = (float)(pixelsInCurrentSlice / secondsElapsed);
-                            measuredBakeSpeed_PixelsPerSecond = Mathf.Lerp(measuredBakeSpeed_PixelsPerSecond, latestBakeSpeed, ADAPTATION_FACTOR);
-                            float newSliceSize = measuredBakeSpeed_PixelsPerSecond * TARGET_BAKE_TIME_SECONDS;
-                            //First make it rectangle, then apply density to it
-                            adaptivePixelsPerSlice = (int)
-                                (((int)Mathf.Clamp(newSliceSize, MIN_PIXELS_PER_SLICE, MAX_PIXELS_PER_SLICE))
-                                .FloorToPowerOfTwo() * PACK_DENSITY);
-                        }
-                    }
-                }
-                #endregion
-                Log.Warning("Finished baking StaticAtlases - " + DateTime.Now.ToString());
-            }
-            if (Current.Game != null)
-            {
-                foreach (var map in Find.Maps)
-                {
-                    if (map.mapDrawer.sections != null)
-                    {
-                        foreach (var thing in map.listerThings.ThingsOfDefs(loadedDefs))
-                        {
-                            map.mapDrawer.MapMeshDirty(thing.Position, MapMeshFlagDefOf.Things | MapMeshFlagDefOf.Buildings);
-                        }
-                    }
-                }
+                AllGraphicLoaded = true;
+                yield return StartCoroutine(BakeStaticAtlases());
             }
 
-            count = 0;
+            var iconsProgress = new ProgressTracker { label = "icons" };
+            progressTrackers.Add(iconsProgress);
+            yield return StartCoroutine(ProcessQueueIncrementally(iconsToLoad, (d, a) => ProcessSingleIcon(d, a), iconsProgress));
 
-            Log.Warning("Starting loading icons: " + iconsToLoad.Count + " - " + DateTime.Now.ToString());
-            while (iconsToLoad.Any())
-            {
-                if (UnityData.IsInMainThread is false)
-                {
-                    yield return 0;
-                }
-                var (def, action) = iconsToLoad.PopFirst();
-                if (def.uiIcon == BaseContent.BadTex)
-                {
-                    try
-                    {
-                        action();
-                    }
-                    catch (Exception ex)
-                    {
-                        Error("Error loading icon for " + def, ex);
-                    }
-                    count++;
-
-                    if (ElapsedMaxImpact)
-                    {
-                        count = 0;
-                        yield return 0;
-                        stopwatch.Restart();
-                    }
-                }
-            }
-
-            Log.Warning("Finished loading icons - " + DateTime.Now.ToString());
-
-            count = 0;
-            Log.Warning("Starting resolving SubSoundDefs: " + subSoundDefToResolve.Count + " - " + DateTime.Now.ToString());
-            while (subSoundDefToResolve.Any())
-            {
-                var (def, action) = subSoundDefToResolve.Dequeue();
-                try
-                {
-                    action();
-                }
-                catch (Exception ex)
-                {
-                    Error("Error resolving AudioGrain for " + def, ex);
-                }
-                count++;
-                if (ElapsedMaxImpact)
-                {
-                    count = 0;
-                    yield return 0;
-                    stopwatch.Restart();
-                }
-            }
-            SoundStarter_Patch.Unpatch();
-            Log.Warning("Finished resolving SubSoundDefs - " + DateTime.Now.ToString());
+            var soundsProgress = new ProgressTracker { label = "sounds" };
+            progressTrackers.Add(soundsProgress);
+            yield return StartCoroutine(ProcessQueueIncrementally(subSoundDefToResolve, (d, a) => ProcessSingleSubSoundDef(d, a), soundsProgress));
 
             stopwatch.Stop();
-            this.enabled = false;
-            yield return null;
+            coroutineRunning = false;
+        }
+
+        public void FinalizeLoading()
+        {
+            ProcessQueueSynchronously(thingGraphicsToLoad, (d, a) => ProcessSingleGraphic(d, a));
+            ProcessQueueSynchronously(terrainGraphicsToLoad, (d, a) => ProcessSingleTerrainGraphic(d, a));
+            ProcessQueueSynchronously(iconsToLoad, (d, a) => ProcessSingleIcon(d, a));
+            RefreshMap();
+            ProcessQueueSynchronously(subSoundDefToResolve, (d, a) => ProcessSingleSubSoundDef(d, a));
+            SoundStarter_Patch.Unpatch();
+            stopwatch.Stop();
+        }
+
+        private void RefreshMap()
+        {
+            if (Current.Game == null) return;
+            foreach (var map in Find.Maps)
+            {
+                if (map.mapDrawer.sections == null) continue;
+                bool shouldRefresh = false;
+                if (loadedThingDefsForMapRefresh.Any())
+                {
+                    shouldRefresh = true;
+                    foreach (var thing in map.listerThings.ThingsOfDefs(loadedThingDefsForMapRefresh))
+                    {
+                        map.mapDrawer.MapMeshDirty(thing.Position, MapMeshFlagDefOf.Things | MapMeshFlagDefOf.Buildings);
+                    }
+                }
+                if (loadedTerrainDefsForMapRefresh.Any())
+                {
+                    shouldRefresh = true;
+                    map.mapDrawer.globalDirtyFlags |= MapMeshFlagDefOf.Terrain;
+                    foreach (var section in map.mapDrawer.sections)
+                    {
+                        section.dirtyFlags |= MapMeshFlagDefOf.Terrain;
+                    }
+                }
+                if (shouldRefresh)
+                {
+                    map.mapDrawer.RegenerateEverythingNow();
+                }
+            }
+            loadedThingDefsForMapRefresh.Clear();
+            loadedTerrainDefsForMapRefresh.Clear();
+        }
+
+        private IEnumerator BakeStaticAtlases()
+        {
+            Log.Warning("Starting baking StaticAtlases - " + DateTime.Now.ToString());
+            var atlasProgress = new ProgressTracker { label = "atlas baking" };
+            if (GlobalTextureAtlasManager.buildQueue.Any())
+            {
+                progressTrackers.Add(atlasProgress);
+                atlasProgress.total = GlobalTextureAtlasManager.buildQueue.Sum(kvp => kvp.Value.Item1.Count);
+                atlasProgress.processed = 0;
+            }
+
+            const float TARGET_BAKE_TIME_SECONDS = 0.008f;
+            const float ADAPTATION_FACTOR = 0.2f;
+            const int INITIAL_PIXELS_PER_SLICE = 1024 * 1024;
+            const int MIN_PIXELS_PER_SLICE = 1024 * 1024;
+            const int MAX_PIXELS_PER_SLICE = 4096 * 4096;
+            const float PACK_DENSITY = 0.8f;
+
+            float measuredBakeSpeed_PixelsPerSecond = 2_000_000f;
+            int adaptivePixelsPerSlice = INITIAL_PIXELS_PER_SLICE;
+            var bakeStopwatch = new Stopwatch();
+
+            foreach (var kvp in GlobalTextureAtlasManager.buildQueue)
+            {
+                var key = kvp.Key;
+                var allTexturesForThisGroup = kvp.Value.Item1;
+                int pixelsInCurrentSlice = 0;
+                var batchForNextBake = new List<(Texture2D main, Texture2D mask)>();
+
+                foreach (Texture2D texture in allTexturesForThisGroup)
+                {
+                    Texture2D mask = key.hasMask && GlobalTextureAtlasManager.buildQueueMasks.TryGetValue(texture, out var m) ? m : null;
+                    batchForNextBake.Add((texture, mask));
+                    pixelsInCurrentSlice += texture.width * texture.height;
+                    if (atlasProgress.total > 0)
+                    {
+                        atlasProgress.processed++;
+                    }
+                    if (pixelsInCurrentSlice >= adaptivePixelsPerSlice)
+                    {
+                        FlushBatch(key, batchForNextBake);
+                        yield return null;
+                        batchForNextBake.Clear();
+                        pixelsInCurrentSlice = 0;
+                    }
+                }
+                if (batchForNextBake.Any())
+                {
+                    FlushBatch(key, batchForNextBake);
+                    yield return null;
+                }
+            }
+            Log.Warning("Finished baking StaticAtlases - " + DateTime.Now.ToString());
+
+            void FlushBatch(TextureAtlasGroupKey key, List<(Texture2D main, Texture2D mask)> batch)
+            {
+                var staticTextureAtlas = new StaticTextureAtlas(key);
+                if (batch.Count == 1)
+                {
+                    staticTextureAtlas.colorTexture = batch.First().main;
+                    if (key.hasMask)
+                    {
+                        staticTextureAtlas.maskTexture = batch.First().mask;
+                    }
+                    staticTextureAtlas.BuildMeshesForUvs([new(0, 0, 1, 1)]);
+                    bakeStopwatch.Reset();
+                }
+                else
+                {
+                    foreach (var (main, msk) in batch)
+                    {
+                        staticTextureAtlas.Insert(main, msk);
+                    }
+                    bakeStopwatch.Restart();
+                    staticTextureAtlas.Bake();
+                    bakeStopwatch.Stop();
+                }
+
+                GlobalTextureAtlasManager.staticTextureAtlases.Add(staticTextureAtlas);
+                double secondsElapsed = bakeStopwatch.Elapsed.TotalSeconds;
+                if (secondsElapsed > 0)
+                {
+                    float latestBakeSpeed = (float)(batch.Sum(t => t.main.width * t.main.height) / secondsElapsed);
+                    measuredBakeSpeed_PixelsPerSecond = Mathf.Lerp(measuredBakeSpeed_PixelsPerSecond, latestBakeSpeed, ADAPTATION_FACTOR);
+                    float newSliceSize = measuredBakeSpeed_PixelsPerSecond * TARGET_BAKE_TIME_SECONDS;
+                    adaptivePixelsPerSlice = (int)(((int)Mathf.Clamp(newSliceSize, MIN_PIXELS_PER_SLICE, MAX_PIXELS_PER_SLICE)).FloorToPowerOfTwo() * PACK_DENSITY);
+                }
+            }
         }
 
         public void Error(string message, Exception ex)
         {
             Log.Error(message + " - " + ex + " - " + new StackTrace());
         }
+
+        private void ProcessSingleGraphic(ThingDef def, Action action)
+        {
+            try
+            {
+                action();
+                loadedThingDefsForMapRefresh.Add(def);
+                if (def.plant != null)
+                {
+                    def.plant.PostLoadSpecial(def);
+                }
+            }
+            catch (Exception ex)
+            {
+                Error("Error loading graphic for " + def, ex);
+            }
+        }
+
+        private void ProcessSingleTerrainGraphic(TerrainDef def, Action action)
+        {
+            try
+            {
+                action();
+                loadedTerrainDefsForMapRefresh.Add(def);
+            }
+            catch (Exception ex)
+            {
+                Error("Error loading graphic for " + def, ex);
+            }
+        }
+
+        private void ProcessSingleIcon(BuildableDef def, Action action)
+        {
+            if (def.uiIcon == BaseContent.BadTex)
+            {
+                try
+                {
+                    action();
+                }
+                catch (Exception ex)
+                {
+                    Error("Error loading icon for " + def, ex);
+                }
+            }
+        }
+
+        private void ProcessSingleSubSoundDef(SubSoundDef def, Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                Error("Error resolving AudioGrain for " + def, ex);
+            }
+        }
+
+        private IEnumerator ProcessQueueIncrementally<T>(Queue<(T, Action)> queue, Action<T, Action> processor, ProgressTracker tracker)
+        {
+            if (!queue.Any())
+            {
+                yield break;
+            }
+            Log.Warning($"Starting loading {tracker.label}: {queue.Count} - {DateTime.Now}");
+            tracker.total = queue.Count;
+            tracker.processed = 0;
+            int count = 0;
+            while (queue.Any())
+            {
+                if (!UnityData.IsInMainThread)
+                {
+                    yield return null;
+                }
+                var (def, action) = queue.Dequeue();
+                processor(def, action);
+                tracker.processed++;
+                count++;
+                if (ElapsedMaxImpact)
+                {
+                    count = 0;
+                    yield return null;
+                    stopwatch.Restart();
+                }
+            }
+            Log.Warning($"Finished loading {tracker.label} - {DateTime.Now}");
+        }
+
+        private void ProcessQueueSynchronously<T>(Queue<(T, Action)> queue, Action<T, Action> processor)
+        {
+            while (queue.Any())
+            {
+                var (def, action) = queue.Dequeue();
+                processor(def, action);
+            }
+        }
     }
 }
-

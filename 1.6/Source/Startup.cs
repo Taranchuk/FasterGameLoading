@@ -32,11 +32,8 @@ namespace FasterGameLoading
             FasterGameLoadingMod.settings.gameVersion = VersionControl.CurrentVersionStringWithRev;
             LoadedModManager.GetMod<FasterGameLoadingMod>().WriteSettings();
             XmlCacheManager.Reset();
-            LongEventHandler.toExecuteWhenFinished.Add(delegate
-            {
-                FasterGameLoadingMod.delayedActions.StartCoroutine(FasterGameLoadingMod.delayedActions.PerformActions());
-            });
             DeepProfiler.End();
+            DelayedActions.StartCoroutine();
         }
     }
 }

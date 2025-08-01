@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -30,17 +30,17 @@ namespace FasterGameLoading
                 }
             }
         }
-        
+
 
         public static void ExecuteDelayed(Action action, ThingDef def)
         {
-            if (def.ShouldBeLoadedImmediately())
+            if (GraphicLoadingUtils.ShouldBeLoadedImmediately(def))
             {
                 LongEventHandler.ExecuteWhenFinished(action);
             }
             else
             {
-                FasterGameLoadingMod.delayedActions.graphicsToLoad.Add((def, action));
+                FasterGameLoadingMod.delayedActions.thingGraphicsToLoad.Enqueue((def, action));
             }
         }
     }
