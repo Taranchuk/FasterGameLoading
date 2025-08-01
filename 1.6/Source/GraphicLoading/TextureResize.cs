@@ -1,4 +1,4 @@
-﻿using RimWorld;
+using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,7 +14,7 @@ namespace FasterGameLoading
         {
             None, Building, Pawn, Weapon, Apparel, Item, Plant, Tree, Terrain, Mote, Filth, Projectile, UI, Other
         }
-        public static Dictionary<TextureType, int> targetSizes = new Dictionary<TextureType, int> 
+        public static Dictionary<TextureType, int> targetSizes = new Dictionary<TextureType, int>
         {
             { TextureType.Building, 256 },
             { TextureType.Pawn, 256 },
@@ -218,7 +218,7 @@ namespace FasterGameLoading
                     File.Delete(ddsPath);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 //Log.Error("Error resizing " + path + " - " + ex.ToString());
             }
@@ -226,7 +226,7 @@ namespace FasterGameLoading
         }
         public static bool TryGetGraphicApparel(ThingDef def, string wornGraphicPath, BodyTypeDef bodyType, out Graphic rec)
         {
-            if (bodyType == BodyTypeDefOf.Baby && def.apparel.developmentalStageFilter.HasFlag(DevelopmentalStage.Baby) is false 
+            if (bodyType == BodyTypeDefOf.Baby && def.apparel.developmentalStageFilter.HasFlag(DevelopmentalStage.Baby) is false
                 || bodyType == BodyTypeDefOf.Child && def.apparel.developmentalStageFilter.HasFlag(DevelopmentalStage.Child) is false)
             {
                 rec = null;
@@ -237,9 +237,9 @@ namespace FasterGameLoading
                 rec = null;
                 return false;
             }
-            string path = ((def.apparel.LastLayer != ApparelLayerDefOf.Overhead && def.apparel.LastLayer != ApparelLayerDefOf.EyeCover 
-                && !RenderAsPack(def) && !(wornGraphicPath == BaseContent.PlaceholderImagePath) 
-                && !(wornGraphicPath == BaseContent.PlaceholderGearImagePath)) ? (wornGraphicPath + "_" + bodyType.defName) 
+            string path = ((def.apparel.LastLayer != ApparelLayerDefOf.Overhead && def.apparel.LastLayer != ApparelLayerDefOf.EyeCover
+                && !RenderAsPack(def) && !(wornGraphicPath == BaseContent.PlaceholderImagePath)
+                && !(wornGraphicPath == BaseContent.PlaceholderGearImagePath)) ? (wornGraphicPath + "_" + bodyType.defName)
                 : wornGraphicPath);
             Shader shader = ShaderDatabase.Cutout;
             if (def.apparel.useWornGraphicMask)
@@ -309,7 +309,7 @@ namespace FasterGameLoading
             }
             return TextureType.None;
         }
-    
+
         private static void FillEntry(TextureType type, BuildableDef def, Graphic graphicOverride = null)
         {
             var graphic = graphicOverride ?? def.graphic;

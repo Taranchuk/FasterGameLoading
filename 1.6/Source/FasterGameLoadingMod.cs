@@ -1,7 +1,4 @@
-﻿using HarmonyLib;
-using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Xml;
+using HarmonyLib;
 using UnityEngine;
 using Verse;
 namespace FasterGameLoading
@@ -10,7 +7,6 @@ namespace FasterGameLoading
     {
         public static Harmony harmony;
         public static FasterGameLoadingSettings settings;
-        public static Thread threadPostLoad;
         public static DelayedActions delayedActions;
         public FasterGameLoadingMod(ModContentPack pack) : base(pack)
         {

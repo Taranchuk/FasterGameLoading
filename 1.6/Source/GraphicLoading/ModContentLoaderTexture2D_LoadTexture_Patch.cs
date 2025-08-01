@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using RimWorld.IO;
 using System;
 using System.Collections.Generic;
@@ -8,7 +8,7 @@ using Verse;
 
 namespace FasterGameLoading
 {
- [HarmonyPatch(typeof(ModContentLoader<Texture2D>), "LoadTexture")]
+    [HarmonyPatch(typeof(ModContentLoader<Texture2D>), "LoadTexture")]
     public static class ModContentLoaderTexture2D_LoadTexture_Patch
     {
         public static Dictionary<string, string> loadedTexturesThisSession = new Dictionary<string, string>();
@@ -41,7 +41,7 @@ namespace FasterGameLoading
                     //        {
                     //            if (otherPath.Contains(otherMod.RootDir.FullName))
                     //            {
-                    //                Log.Message(mod.Name + " - Preventing loading " + texture.name + ", already replaced with " + otherMod.Name);
+                    //                Log.Warning(mod.Name + " - Preventing loading " + texture.name + ", already replaced with " + otherMod.Name);
                     //            }
                     //        }
                     //    }
