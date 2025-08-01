@@ -14,7 +14,6 @@ namespace FasterGameLoading
         static IEnumerable<CodeInstruction> LateExecute(IEnumerable<CodeInstruction> codeInstructions)
         {
             var execute = AccessTools.Method(typeof(LongEventHandler), nameof(LongEventHandler.ExecuteWhenFinished));
-            //var executeDelayed = AccessTools.Method(typeof(SubSoundDef_ResolvePatch), nameof(ExecuteDelayed));
             foreach (var ci in codeInstructions)
             {
                 if (ci.Calls(execute))

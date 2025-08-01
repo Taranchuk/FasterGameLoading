@@ -33,7 +33,6 @@ namespace FasterGameLoading
             LoadedModManager.GetMod<FasterGameLoadingMod>().WriteSettings();
             XmlCacheManager.Reset();
             DeepProfiler.End();
-            DelayedActions.StartCoroutine();
         }
     }
 }
