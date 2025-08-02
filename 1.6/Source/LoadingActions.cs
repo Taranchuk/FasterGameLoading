@@ -215,6 +215,8 @@ namespace FasterGameLoading
         {
             Log.Warning("Starting baking StaticAtlases - " + DateTime.Now);
 
+            BuildingsDamageSectionLayerUtility.TryInsertIntoAtlas();
+            MinifiedThing.TryInsertIntoAtlas();
             var buildQueueSnapshot = GlobalTextureAtlasManager.buildQueue.ToList();
             if (!buildQueueSnapshot.Any())
             {
@@ -243,8 +245,7 @@ namespace FasterGameLoading
                 var allTexturesForThisGroup = kvp.Value.Item1;
                 int pixelsInCurrentSlice = 0;
                 var batchForNextBake = new List<(Texture2D main, Texture2D mask)>();
-
-                foreach (Texture2D texture in allTexturesForThisGroup)
+                foreach (var texture in allTexturesForThisGroup)
                 {
                     Texture2D mask = key.hasMask && GlobalTextureAtlasManager.buildQueueMasks.TryGetValue(texture, out var m) ? m : null;
                     batchForNextBake.Add((texture, mask));
