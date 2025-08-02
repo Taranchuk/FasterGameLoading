@@ -11,7 +11,7 @@ using Verse.Sound;
 
 namespace FasterGameLoading
 {
-    public class DelayedActions : MonoBehaviour
+    public class LoadingActions : MonoBehaviour
     {
         public float MaxImpactThisFrame => 0.05f;
         public Queue<(ThingDef def, Action action)> thingGraphicsToLoad = new();
@@ -21,22 +21,19 @@ namespace FasterGameLoading
         public static bool AllGraphicLoaded = false;
         public static List<ThingDef> loadedThingDefsForMapRefresh = new();
         public static List<TerrainDef> loadedTerrainDefsForMapRefresh = new();
-
         private static readonly List<ProgressTracker> progressTrackers;
         public static readonly ProgressTracker ThingGraphicsProgress = new() { label = "thing graphics" };
         public static readonly ProgressTracker TerrainGraphicsProgress = new() { label = "terrain graphics" };
         public static readonly ProgressTracker IconsProgress = new() { label = "icons" };
         public static readonly ProgressTracker SoundsProgress = new() { label = "sounds" };
         public static readonly ProgressTracker AtlasProgress = new() { label = "atlas baking" };
-
+        public static readonly Dictionary<MethodBase, ProfilingTracker> profiledMethods = new();
+        public static readonly List<ProfilingTracker> profilingTrackers = new();
         private Stopwatch stopwatch = new();
         private bool ElapsedMaxImpact => (float)stopwatch.ElapsedTicks / Stopwatch.Frequency >= MaxImpactThisFrame;
-        private bool gameInitializationBegan = false;
-
         private bool graphicsProcessingStarted = false;
         private bool assetsProcessingStarted = false;
-
-        static DelayedActions()
+        static LoadingActions()
         {
             progressTrackers = new List<ProgressTracker>
             {
@@ -77,14 +74,16 @@ namespace FasterGameLoading
                     StartCoroutine(ProcessAssetsIncrementally());
                 }
             }
-
-            if (gameInitializationBegan is false && Current.Game != null)
-            {
-                gameInitializationBegan = true;
-                LongEventHandler.ExecuteWhenFinished(FinalizeLoading);
-            }
         }
-
+        public class ProfilingTracker
+        {
+            public string methodName;
+            public Type declaringType;
+            public long totalTicks;
+            public int callCount;
+            public float AverageTimeMs => callCount > 0 ? (float)totalTicks / callCount / Stopwatch.Frequency * 1000f : 0f;
+            public float TotalTimeMs => (float)totalTicks / Stopwatch.Frequency * 1000f;
+        }
         public class ProgressTracker
         {
             public string label;
@@ -95,7 +94,7 @@ namespace FasterGameLoading
 
         public void OnGUI()
         {
-            if (!progressTrackers.Any())
+            if (FasterGameLoadingSettings.debugMode is false || !progressTrackers.Any() && !profilingTrackers.Any())
             {
                 return;
             }
@@ -118,6 +117,28 @@ namespace FasterGameLoading
                     Widgets.Label(rect, $"Loading {tracker.label}: {tracker.processed} / {tracker.total}");
                     Text.Anchor = TextAnchor.UpperLeft;
                     y += barHeight + 5f;
+                }
+            }
+            if (profilingTrackers.Any())
+            {
+                var sortedTrackers = profilingTrackers.Where(t => t.TotalTimeMs > 500).OrderByDescending(t => t.TotalTimeMs).ToList();
+                if (sortedTrackers.Any())
+                {
+                    float profilingY = y + 20;
+                    float profilingHeight = (sortedTrackers.Count + 1) * 20f + 10f;
+                    var backgroundRect = new Rect(x - 5, profilingY - 5, barWidth * 2 + 10, profilingHeight);
+                    Widgets.DrawBoxSolid(backgroundRect, Color.black);
+
+                    Text.Font = GameFont.Small;
+                    Widgets.Label(new Rect(x, profilingY, barWidth, 20), "Method Profiling (methods > 500ms):");
+                    profilingY += 25;
+
+                    foreach (var tracker in sortedTrackers)
+                    {
+                        string label = $"{tracker.declaringType.Name}.{tracker.methodName}: {tracker.TotalTimeMs:F4}ms total, {tracker.AverageTimeMs:F4}ms avg, {tracker.callCount} calls";
+                        Widgets.Label(new Rect(x, profilingY, barWidth * 2, 20), label);
+                        profilingY += 20;
+                    }
                 }
             }
         }
@@ -148,11 +169,11 @@ namespace FasterGameLoading
 
         public void FinalizeLoading()
         {
-            ProcessQueueSynchronously(thingGraphicsToLoad, ProcessSingleGraphic);
-            ProcessQueueSynchronously(terrainGraphicsToLoad, ProcessSingleTerrainGraphic);
-            ProcessQueueSynchronously(iconsToLoad, ProcessSingleIcon);
+            ProcessQueueSynchronously(thingGraphicsToLoad, ProcessSingleGraphic, ThingGraphicsProgress);
+            ProcessQueueSynchronously(terrainGraphicsToLoad, ProcessSingleTerrainGraphic, TerrainGraphicsProgress);
+            ProcessQueueSynchronously(iconsToLoad, ProcessSingleIcon, IconsProgress);
             RefreshMap();
-            ProcessQueueSynchronously(subSoundDefToResolve, ProcessSingleSubSoundDef);
+            ProcessQueueSynchronously(subSoundDefToResolve, ProcessSingleSubSoundDef, SoundsProgress);
             SoundStarter_Patch.Unpatch();
             stopwatch.Stop();
         }
@@ -225,8 +246,6 @@ namespace FasterGameLoading
 
                 foreach (Texture2D texture in allTexturesForThisGroup)
                 {
-                    if (gameInitializationBegan) yield break;
-
                     Texture2D mask = key.hasMask && GlobalTextureAtlasManager.buildQueueMasks.TryGetValue(texture, out var m) ? m : null;
                     batchForNextBake.Add((texture, mask));
                     pixelsInCurrentSlice += texture.width * texture.height;
@@ -369,8 +388,6 @@ namespace FasterGameLoading
             stopwatch.Restart();
             while (queue.Any())
             {
-                if (gameInitializationBegan) yield break;
-
                 if (!UnityData.IsInMainThread)
                 {
                     yield return null;
@@ -388,12 +405,13 @@ namespace FasterGameLoading
             Log.Warning($"Finished loading {tracker.label} - {DateTime.Now}");
         }
 
-        private void ProcessQueueSynchronously<T>(Queue<(T, Action)> queue, Action<T, Action> processor)
+        private void ProcessQueueSynchronously<T>(Queue<(T, Action)> queue, Action<T, Action> processor, ProgressTracker tracker)
         {
             while (queue.Any())
             {
                 var (def, action) = queue.Dequeue();
                 processor(def, action);
+                tracker.processed++;
             }
         }
     }

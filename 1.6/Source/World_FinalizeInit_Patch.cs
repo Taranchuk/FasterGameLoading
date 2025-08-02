@@ -13,7 +13,7 @@ namespace FasterGameLoading
         {
             LongEventHandler.ExecuteWhenFinished(delegate
             {
-                FasterGameLoadingMod.delayedActions.FinalizeLoading();
+                FasterGameLoadingMod.loadingActions.FinalizeLoading();
             });
         }
     }

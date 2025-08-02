@@ -30,7 +30,7 @@ namespace FasterGameLoading
 
         public static void ExecuteDelayed(Action action, TerrainDef def)
         {
-            FasterGameLoadingMod.delayedActions.terrainGraphicsToLoad.Enqueue((def, action));
+            FasterGameLoadingMod.loadingActions.terrainGraphicsToLoad.Enqueue((def, action));
         }
     }
 }

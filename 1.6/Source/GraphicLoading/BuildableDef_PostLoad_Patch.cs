@@ -37,7 +37,7 @@ namespace FasterGameLoading
             }
             else
             {
-                FasterGameLoadingMod.delayedActions.iconsToLoad.Enqueue((def, action));
+                FasterGameLoadingMod.loadingActions.iconsToLoad.Enqueue((def, action));
             }
         }
     }

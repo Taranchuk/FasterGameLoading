@@ -40,7 +40,7 @@ namespace FasterGameLoading
             }
             else
             {
-                FasterGameLoadingMod.delayedActions.thingGraphicsToLoad.Enqueue((def, action));
+                FasterGameLoadingMod.loadingActions.thingGraphicsToLoad.Enqueue((def, action));
             }
         }
     }
