@@ -15,12 +15,10 @@ namespace FasterGameLoading
         private static bool cacheActive;
         private const long MinFreeSpaceForCaching = 1L * 1024 * 1024 * 1024;
         private static bool loggedLowSpaceWarning = false;
-        public static bool PatchedCacheLoaded { get; set; }
-
+        public static bool XMLCacheLoaded { get; set; }
         public static bool CacheIsActive => cacheActive;
         public static string CacheDirectory => Path.Combine(GenFilePaths.SaveDataFolderPath, "FGL_Cache");
-        public static string AssetCachePath => Path.Combine(CacheDirectory, "AssetCache.xml");
-        public static string PatchedCachePath => Path.Combine(CacheDirectory, "PatchedXmlCache.xml");
+        public static string XMLCachePath => Path.Combine(CacheDirectory, "XmlCache.xml");
         public static Dictionary<string, string> currentFileHashes = new Dictionary<string, string>();
 
         public static void ActivateCache()
@@ -36,13 +34,9 @@ namespace FasterGameLoading
         public static void InvalidateCache()
         {
             DeactivateCache();
-            if (File.Exists(AssetCachePath))
+            if (File.Exists(XMLCachePath))
             {
-                File.Delete(AssetCachePath);
-            }
-            if (File.Exists(PatchedCachePath))
-            {
-                File.Delete(PatchedCachePath);
+                File.Delete(XMLCachePath);
             }
         }
 
@@ -50,63 +44,7 @@ namespace FasterGameLoading
         {
             DeactivateCache();
             currentFileHashes.Clear();
-            PatchedCacheLoaded = false;
-        }
-
-        public static void SaveAssetCache(XmlDocument doc, Dictionary<XmlNode, LoadableXmlAsset> assetLookup)
-        {
-            Log.Warning("[FasterGameLoading] Saving XML cache.");
-            DeepProfiler.Start("FGL: SaveAssetCache");
-            if (doc.DocumentElement == null || !doc.DocumentElement.HasChildNodes) return;
-            if (!VerifyDiskSpaceForCaching()) return;
-
-            var sw = Stopwatch.StartNew();
-            Directory.CreateDirectory(CacheDirectory);
-            AddFGLAttributes(doc, assetLookup);
-
-            var writerSettings = new XmlWriterSettings { CheckCharacters = false, Indent = false, NewLineHandling = NewLineHandling.None };
-            using (var writer = XmlWriter.Create(AssetCachePath, writerSettings))
-            {
-                doc.Save(writer);
-            }
-            sw.Stop();
-            Log.Warning($"[FasterGameLoading] Took {sw.ElapsedMilliseconds}ms to save XML cache to disk.");
-
-            sw.Restart();
-            RemoveFGLAttributes(doc);
-            sw.Stop();
-            Log.Warning($"[FasterGameLoading] Took {sw.ElapsedMilliseconds}ms to remove cache attributes from doc.");
-            DeepProfiler.End();
-        }
-
-        public static void HydrateAssetCache(XmlDocument targetDoc, Dictionary<XmlNode, LoadableXmlAsset> assetLookup)
-        {
-            DeepProfiler.Start("FGL: HydrateAssetCache");
-            var sw = Stopwatch.StartNew();
-            using (var stream = File.OpenRead(AssetCachePath))
-            {
-                var readerSettings = new XmlReaderSettings
-                {
-                    IgnoreComments = true,
-                    IgnoreWhitespace = true,
-                    CheckCharacters = false,
-                    DtdProcessing = DtdProcessing.Ignore
-                };
-                using (var xmlReader = XmlReader.Create(stream, readerSettings))
-                {
-                    targetDoc.Load(xmlReader);
-                }
-            }
-            sw.Stop();
-            Log.Warning($"[FasterGameLoading] Took {sw.ElapsedMilliseconds}ms to read asset cache from disk.");
-
-            if (targetDoc.DocumentElement == null)
-            {
-                throw new XmlException("Cached XML document is empty or invalid.");
-            }
-            HydrateLookupsFrom(targetDoc, assetLookup);
-            RemoveFGLAttributes(targetDoc);
-            DeepProfiler.End();
+            XMLCacheLoaded = false;
         }
 
         public static void HydrateLookupsFrom(XmlDocument doc, Dictionary<XmlNode, LoadableXmlAsset> assetLookup)
@@ -134,9 +72,9 @@ namespace FasterGameLoading
             DeepProfiler.End();
         }
 
-        public static void SavePatchedCache(XmlDocument doc, Dictionary<XmlNode, LoadableXmlAsset> assetLookup)
+        public static void SaveXMLCache(XmlDocument doc, Dictionary<XmlNode, LoadableXmlAsset> assetLookup)
         {
-            DeepProfiler.Start("FGL: SavePatchedCache");
+            DeepProfiler.Start("FGL: SaveXMLCache");
             if (!VerifyDiskSpaceForCaching()) return;
 
             Directory.CreateDirectory(CacheDirectory);
@@ -145,7 +83,7 @@ namespace FasterGameLoading
             sw.Stop();
             Log.Warning($"[FasterGameLoading] Took {sw.ElapsedMilliseconds}ms to add cache attributes to doc.");
             var writerSettings = new XmlWriterSettings { CheckCharacters = false, Indent = false, NewLineHandling = NewLineHandling.None };
-            using (var writer = XmlWriter.Create(PatchedCachePath, writerSettings))
+            using (var writer = XmlWriter.Create(XMLCachePath, writerSettings))
             {
                 doc.Save(writer);
             }
@@ -156,18 +94,18 @@ namespace FasterGameLoading
             DeepProfiler.End();
         }
 
-        public static bool TryLoadPatchedCache(out XmlDocument doc)
+        public static bool TryLoadXMLCache(out XmlDocument doc)
         {
-            DeepProfiler.Start("FGL: TryLoadPatchedCache");
+            DeepProfiler.Start("FGL: TryLoadXMLCache");
             doc = new XmlDocument();
-            if (!File.Exists(PatchedCachePath))
+            if (!File.Exists(XMLCachePath))
             {
                 DeepProfiler.End();
                 return false;
             }
             try
             {
-                using (var stream = File.OpenRead(PatchedCachePath))
+                using (var stream = File.OpenRead(XMLCachePath))
                 {
                     var readerSettings = new XmlReaderSettings
                     {
@@ -187,8 +125,8 @@ namespace FasterGameLoading
             }
             catch (System.Exception e)
             {
-                Log.Error($"Error loading patched XML cache, rebuilding. Error: {e}");
-                File.Delete(PatchedCachePath);
+                Log.Error($"Error loading XML cache, rebuilding. Error: {e}");
+                File.Delete(XMLCachePath);
                 DeepProfiler.End();
                 return false;
             }

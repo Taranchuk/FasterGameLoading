@@ -20,7 +20,6 @@ namespace FasterGameLoading
         public static bool xmlCaching = true;
         public static bool debugMode;
         public Dictionary<string, string> xmlHashes = new Dictionary<string, string>();
-        public string gameVersion;
         public static ModContentPack GetModContent(string packageId)
         {
             var packageLower = packageId.ToLower();
@@ -76,7 +75,6 @@ namespace FasterGameLoading
             Scribe_Values.Look(ref xmlCaching, "xmlCaching", true);
             Scribe_Values.Look(ref debugMode, "debugMode");
             Scribe_Collections.Look(ref xmlHashes, "xmlHashes", LookMode.Value, LookMode.Value);
-            Scribe_Values.Look(ref gameVersion, "gameVersion");
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 loadedTexturesSinceLastSession ??= new Dictionary<string, string>();

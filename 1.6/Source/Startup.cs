@@ -35,7 +35,6 @@ namespace FasterGameLoading
             FasterGameLoadingSettings.successfulXMLPathesSinceLastSession = new HashSet<string>(XmlNode_SelectSingleNode_Patch.successfulXMLPathesThisSession);
             FasterGameLoadingSettings.failedXMLPathesSinceLastSession = new HashSet<string>(XmlNode_SelectSingleNode_Patch.failedXMLPathesThisSession);
             FasterGameLoadingMod.settings.xmlHashes = new Dictionary<string, string>(XmlCacheManager.currentFileHashes);
-            FasterGameLoadingMod.settings.gameVersion = VersionControl.CurrentVersionStringWithRev;
             LoadedModManager.GetMod<FasterGameLoadingMod>().WriteSettings();
             XmlCacheManager.Reset();
         }

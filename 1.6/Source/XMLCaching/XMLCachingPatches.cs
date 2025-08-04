@@ -40,20 +40,15 @@ namespace FasterGameLoading
             var currentMods = ModsConfig.ActiveModsInLoadOrder.Select(m => m.packageIdLowerCase).ToList();
             var lastMods = FasterGameLoadingSettings.modsInLastSession;
             bool modsChanged = lastMods is null || !lastMods.SequenceEqual(currentMods);
-
-            if (!modsChanged && FasterGameLoadingMod.settings.gameVersion == VersionControl.CurrentVersionStringWithRev && File.Exists(XmlCacheManager.AssetCachePath) && File.Exists(XmlCacheManager.PatchedCachePath))
+            if (!modsChanged && File.Exists(XmlCacheManager.XMLCachePath))
             {
                 XmlCacheManager.ActivateCache();
             }
             else
             {
-                if (modsChanged)
+                if (modsChanged && File.Exists(XmlCacheManager.XMLCachePath))
                 {
                     Log.Warning("[FasterGameLoading] Mod list changed, invalidating cache.");
-                }
-                else
-                {
-                    Log.Warning("[FasterGameLoading] Game version changed, invalidating cache.");
                 }
                 XmlCacheManager.InvalidateCache();
             }
@@ -70,31 +65,20 @@ namespace FasterGameLoading
             __state = false;
             if (XmlCacheManager.CacheIsActive)
             {
-                if (XmlCacheManager.TryLoadPatchedCache(out var cachedDoc))
-                {
-                    Log.Warning("[FasterGameLoading] XML cache is valid, loading it and skipping CombineIntoUnifiedXML and ApplyPatches.");
-                    __result = cachedDoc;
-                    XmlCacheManager.HydrateLookupsFrom(__result, assetlookup);
-                    XmlCacheManager.PatchedCacheLoaded = true;
-                    DeepProfiler.End();
-                    return false;
-                }
-
                 if (CheckHashes(xmls))
                 {
-                    try
+                    if (XmlCacheManager.TryLoadXMLCache(out var cachedDoc))
                     {
-                        Log.Warning("[FasterGameLoading] XML cache is valid, loading from cache.");
-                        var sw2 = Stopwatch.StartNew();
-                        XmlCacheManager.HydrateAssetCache(__result = new XmlDocument(), assetlookup);
-                        sw2.Stop();
-                        Log.Warning($"[FasterGameLoading] Took {sw2.ElapsedMilliseconds}ms to hydrate asset cache.");
+                        Log.Warning("[FasterGameLoading] XML cache is valid, loading it and skipping CombineIntoUnifiedXML and ApplyPatches.");
+                        __result = cachedDoc;
+                        XmlCacheManager.HydrateLookupsFrom(__result, assetlookup);
+                        XmlCacheManager.XMLCacheLoaded = true;
                         DeepProfiler.End();
                         return false;
                     }
-                    catch (Exception e)
+                    else
                     {
-                        Log.Error($"Error loading from asset cache: {e}, rebuilding.");
+                        Log.Warning("[FasterGameLoading] Failed to load XML cache.");
                         XmlCacheManager.InvalidateCache();
                     }
                 }
@@ -108,14 +92,6 @@ namespace FasterGameLoading
             __state = true;
             DeepProfiler.End();
             return true;
-        }
-
-        public static void Postfix(XmlDocument __result, Dictionary<XmlNode, LoadableXmlAsset> assetlookup, bool __state)
-        {
-            if (__state)
-            {
-                XmlCacheManager.SaveAssetCache(__result, assetlookup);
-            }
         }
 
         private static bool CheckHashes(List<LoadableXmlAsset> xmls)
@@ -140,10 +116,10 @@ namespace FasterGameLoading
             });
             XmlCacheManager.currentFileHashes = new Dictionary<string, string>(concurrentHashes);
             sw.Stop();
-            Log.Warning($"[FasterGameLoading] Took {sw.ElapsedMilliseconds}ms to generate {xmls.Count} hashes.");
-
-            return XmlCacheManager.currentFileHashes.Count == FasterGameLoadingMod.settings.xmlHashes.Count &&
+            var result = XmlCacheManager.currentFileHashes.Count == FasterGameLoadingMod.settings.xmlHashes.Count &&
                                !XmlCacheManager.currentFileHashes.Except(FasterGameLoadingMod.settings.xmlHashes).Any();
+            Log.Warning($"[FasterGameLoading] Took {sw.ElapsedMilliseconds}ms to check {xmls.Count} hashes.");
+            return result;
         }
     }
 
@@ -167,7 +143,7 @@ namespace FasterGameLoading
         public static bool Prefix(XmlDocument xmlDoc, Dictionary<XmlNode, LoadableXmlAsset> assetlookup, out bool __state)
         {
             __state = true;
-            if (XmlCacheManager.PatchedCacheLoaded)
+            if (XmlCacheManager.XMLCacheLoaded)
             {
                 __state = false;
                 return false;
@@ -180,9 +156,9 @@ namespace FasterGameLoading
             DeepProfiler.Start("FGL: ApplyPatches Postfix");
             if (__state && FasterGameLoadingSettings.xmlCaching)
             {
-                Log.Warning("[FasterGameLoading] Rebuilding patched XML cache.");
+                Log.Warning("[FasterGameLoading] Rebuilding XML cache.");
                 var sw = Stopwatch.StartNew();
-                XmlCacheManager.SavePatchedCache(xmlDoc, assetlookup);
+                XmlCacheManager.SaveXMLCache(xmlDoc, assetlookup);
                 sw.Stop();
                 Log.Warning($"[FasterGameLoading] Took {sw.ElapsedMilliseconds}ms to save patched cache.");
             }
