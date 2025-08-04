@@ -1,5 +1,6 @@
 using HarmonyLib;
 using RimWorld;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -22,7 +23,12 @@ namespace FasterGameLoading
 
         public static void Postfix()
         {
-            DeepProfiler.Start("FGL: Startup Postfix");
+            LongEventHandler.ExecuteWhenFinished(() =>
+            {
+                var firstTimestampt = DateTime.Parse(Log.messageQueue.messages.First().timestamp);
+                var timeSpent = DateTime.Now - firstTimestampt;
+                Log.Warning("Mods installed: " + ModLister.AllInstalledMods.Where(x => x.Active).Count() + " - total startup time: " + timeSpent.ToString(@"m\:ss") + " - " + DateTime.Now.ToString());
+            });
             FasterGameLoadingSettings.modsInLastSession = ModsConfig.ActiveModsInLoadOrder.Select(x => x.packageIdLowerCase).ToList();
             FasterGameLoadingSettings.loadedTexturesSinceLastSession = new Dictionary<string, string>(ModContentLoaderTexture2D_LoadTexture_Patch.loadedTexturesThisSession);
             FasterGameLoadingSettings.loadedTypesByFullNameSinceLastSession = new Dictionary<string, string>(GenTypes_GetTypeInAnyAssemblyInt_Patch.loadedTypesThisSession);
@@ -32,7 +38,6 @@ namespace FasterGameLoading
             FasterGameLoadingMod.settings.gameVersion = VersionControl.CurrentVersionStringWithRev;
             LoadedModManager.GetMod<FasterGameLoadingMod>().WriteSettings();
             XmlCacheManager.Reset();
-            DeepProfiler.End();
         }
     }
 }

@@ -112,16 +112,10 @@ namespace FasterGameLoading
 
         public static void Postfix(XmlDocument __result, Dictionary<XmlNode, LoadableXmlAsset> assetlookup, bool __state)
         {
-            DeepProfiler.Start("FGL: CombineIntoUnifiedXML Postfix");
             if (__state)
             {
-                Log.Warning("[FasterGameLoading] Rebuilding XML cache.");
-                var sw = Stopwatch.StartNew();
                 XmlCacheManager.SaveAssetCache(__result, assetlookup);
-                sw.Stop();
-                Log.Warning($"[FasterGameLoading] Took {sw.ElapsedMilliseconds}ms to save asset cache.");
             }
-            DeepProfiler.End();
         }
 
         private static bool CheckHashes(List<LoadableXmlAsset> xmls)
