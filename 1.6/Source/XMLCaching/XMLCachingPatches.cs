@@ -88,16 +88,20 @@ namespace FasterGameLoading
                     XmlCacheManager.InvalidateCache();
                 }
             }
+            else if (FasterGameLoadingSettings.xmlCaching)
+            {
+                CheckHashes(xmls, performComparison: false);
+            }
 
             __state = true;
             DeepProfiler.End();
             return true;
         }
 
-        private static bool CheckHashes(List<LoadableXmlAsset> xmls)
+        private static bool CheckHashes(List<LoadableXmlAsset> xmls, bool performComparison = true)
         {
-            var concurrentHashes = new ConcurrentDictionary<string, string>();
             var sw = Stopwatch.StartNew();
+            var concurrentHashes = new ConcurrentDictionary<string, string>();
             Parallel.ForEach(xmls, asset =>
             {
                 string key;
@@ -115,10 +119,32 @@ namespace FasterGameLoading
                 concurrentHashes[key] = XmlCacheManager.GenerateSha256Hash(content);
             });
             XmlCacheManager.currentFileHashes = new Dictionary<string, string>(concurrentHashes);
+            if (!performComparison)
+            {
+                sw.Stop();
+                Log.Warning($"[FasterGameLoading] Took {sw.ElapsedMilliseconds}ms to hash {xmls.Count} files.");
+                return false;
+            }
+            var currentHashes = XmlCacheManager.currentFileHashes;
+            var oldHashes = FasterGameLoadingMod.settings.xmlHashes;
+            bool DoHashesMatch()
+            {
+                if (currentHashes.Count != oldHashes.Count)
+                {
+                    return false;
+                }
+                foreach (var kvp in currentHashes)
+                {
+                    if (!oldHashes.TryGetValue(kvp.Key, out var oldValue) || oldValue != kvp.Value)
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            var result = DoHashesMatch();
             sw.Stop();
-            var result = XmlCacheManager.currentFileHashes.Count == FasterGameLoadingMod.settings.xmlHashes.Count &&
-                               !XmlCacheManager.currentFileHashes.Except(FasterGameLoadingMod.settings.xmlHashes).Any();
-            Log.Warning($"[FasterGameLoading] Took {sw.ElapsedMilliseconds}ms to check {xmls.Count} hashes.");
+            Log.Warning($"[FasterGameLoading] Took {sw.ElapsedMilliseconds}ms to hash and compare {xmls.Count} files.");
             return result;
         }
     }
@@ -160,7 +186,7 @@ namespace FasterGameLoading
                 var sw = Stopwatch.StartNew();
                 XmlCacheManager.SaveXMLCache(xmlDoc, assetlookup);
                 sw.Stop();
-                Log.Warning($"[FasterGameLoading] Took {sw.ElapsedMilliseconds}ms to save patched cache.");
+                Log.Warning($"[FasterGameLoading] Took {sw.ElapsedMilliseconds}ms to save XML cache.");
             }
             DeepProfiler.End();
         }
