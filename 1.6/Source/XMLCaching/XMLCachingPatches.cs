@@ -61,6 +61,7 @@ namespace FasterGameLoading
     {
         public static bool Prefix(List<LoadableXmlAsset> xmls, ref XmlDocument __result, Dictionary<XmlNode, LoadableXmlAsset> assetlookup, out bool __state)
         {
+            PreloadingManager.PreloadTask?.Wait();
             DeepProfiler.Start("FGL: CombineIntoUnifiedXML Prefix");
             __state = false;
             if (XmlCacheManager.CacheIsActive)
@@ -179,14 +180,9 @@ namespace FasterGameLoading
 
         public static void Postfix(XmlDocument xmlDoc, bool __state, Dictionary<XmlNode, LoadableXmlAsset> assetlookup)
         {
-            DeepProfiler.Start("FGL: ApplyPatches Postfix");
             if (__state && FasterGameLoadingSettings.xmlCaching)
             {
-                Log.Warning("[FasterGameLoading] Rebuilding XML cache.");
-                var sw = Stopwatch.StartNew();
                 XmlCacheManager.SaveXMLCache(xmlDoc, assetlookup);
-                sw.Stop();
-                Log.Warning($"[FasterGameLoading] Took {sw.ElapsedMilliseconds}ms to save XML cache.");
             }
             DeepProfiler.End();
         }

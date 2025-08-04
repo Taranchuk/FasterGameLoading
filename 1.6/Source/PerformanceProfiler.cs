@@ -20,11 +20,13 @@ namespace FasterGameLoading
             {
                 PerformanceProfiling.ParseType(type);
             }
+            PerformanceProfiling.stopProfiling = true;
         }
     }
 
     public static class PerformanceProfiling
     {
+        public static bool stopProfiling;
         public static Harmony harmony;
         public static HashSet<Type> profileUponStartup = new HashSet<Type>();
         static PerformanceProfiling()
@@ -199,7 +201,7 @@ namespace FasterGameLoading
         }
         private static void MethodProfilingPrefix(MethodBase __originalMethod, ref long __state)
         {
-            if (LoadingActions.profiledMethods.ContainsKey(__originalMethod))
+            if (!stopProfiling && LoadingActions.profiledMethods.ContainsKey(__originalMethod))
             {
                 __state = Stopwatch.GetTimestamp();
             }
@@ -207,7 +209,7 @@ namespace FasterGameLoading
 
         private static void MethodProfilingPostfix(MethodBase __originalMethod, long __state)
         {
-            if (LoadingActions.profiledMethods.TryGetValue(__originalMethod, out var tracker))
+            if (!stopProfiling && LoadingActions.profiledMethods.TryGetValue(__originalMethod, out var tracker))
             {
                 long elapsedTicks = Stopwatch.GetTimestamp() - __state;
                 tracker.totalTicks += elapsedTicks;

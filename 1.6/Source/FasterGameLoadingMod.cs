@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
+using RimWorld;
 using RimWorld.IO;
+using RuntimeAudioClipLoader;
 using UnityEngine;
 using Verse;
 using Object = UnityEngine.Object;
@@ -22,6 +24,7 @@ namespace FasterGameLoading
             settings = this.GetSettings<FasterGameLoadingSettings>();
             harmony = new Harmony("FasterGameLoadingMod");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
+            PreloadingManager.StartPreloading();
             //if (FasterGameLoadingSettings.debugMode)
             //{
             //    ProfileTypes();
@@ -32,28 +35,35 @@ namespace FasterGameLoading
         {
             var typesToProfile = new List<Type>
             {
-                //typeof(ParseHelper),
-                //typeof(StaticConstructorOnStartupUtility),
-                //typeof(Harmony),
-                //typeof(ImageConversion),
-                //typeof(FilesystemFile),
-                //typeof(Texture2D),
-                //typeof(AccessTools),
-                //typeof(AssetBundle),
-                //typeof(ModContentPack),
-                //typeof(GlobalTextureAtlasManager),
-                //typeof(GenTypes),
-                //typeof(XmlInheritance),
-                //typeof(LoadedLanguage),
-                //typeof(DirectXmlCrossRefLoader),
-                //typeof(GenDefDatabase),
-                //typeof(ParseHelper),
-                //typeof(PlayDataLoader),
-                typeof(DefDatabase<ThingDef>),
+                typeof(ParseHelper),
+                typeof(StaticConstructorOnStartupUtility),
+                typeof(Harmony),
+                typeof(ImageConversion),
+                typeof(FilesystemFile),
+                typeof(Texture2D),
+                typeof(AccessTools),
+                typeof(AssetBundle),
+                typeof(GlobalTextureAtlasManager),
+                typeof(GenTypes),
+                typeof(XmlInheritance),
+                typeof(LoadedLanguage),
+                typeof(DirectXmlCrossRefLoader),
+                typeof(GenDefDatabase),
+                typeof(PlayDataLoader),
+                typeof(ModLister),
+                typeof(Mod),
                 typeof(DirectXmlLoader),
-                typeof(GraphicDatabase),
-                typeof(GraphicData),
+                typeof(DefInjectionPackage),
+                typeof(DefGenerator),
+                typeof(PlayerKnowledgeDatabase),
+                typeof(KeyPrefs),
+                typeof(Prefs),
+                typeof(ShortHashGiver),
+                typeof(ModContentLoader<AudioClip>),
+                typeof(Manager),
+                typeof(BackstoryTranslationUtility),
             };
+            typesToProfile.AddRange(GenTypes.AllSubclasses(typeof(Def)));
             PerformanceProfiling.harmony = harmony;
             PerformanceProfiling.ProfileTypes(typesToProfile.Distinct().ToHashSet());
         }
