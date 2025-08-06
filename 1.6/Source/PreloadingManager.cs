@@ -11,6 +11,7 @@ namespace FasterGameLoading
         public static Task PreloadTask;
         public static void StartPreloading()
         {
+            ReflectionCacheManager.StartPreloading();
             PreloadTask = XmlCacheManager.StartPreloadingCache();
             TexturePreloader.Start();
         }

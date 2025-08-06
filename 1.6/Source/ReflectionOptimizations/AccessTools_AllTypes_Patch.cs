@@ -1,14 +1,17 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using Verse;
 
 namespace FasterGameLoading
 {
     [HarmonyPatch(typeof(AccessTools), "AllTypes")]
     public static class AccessTools_AllTypes_Patch
     {
-        public static List<Type> allTypesCached;
+        public static ConcurrentBag<Type> allTypesCached;
         public static bool Prefix(ref IEnumerable<Type> __result)
         {
             if (allTypesCached is null)
@@ -26,8 +29,13 @@ namespace FasterGameLoading
         {
             if (allTypesCached is null)
             {
-                allTypesCached = __result.ToList();
+                allTypesCached = new ConcurrentBag<Type>(__result);
             }
+        }
+
+        public static void DoCache()
+        {
+            allTypesCached = new ConcurrentBag<Type>(AccessTools.AllTypes());
         }
     }
 }

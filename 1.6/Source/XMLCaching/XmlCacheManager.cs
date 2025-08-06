@@ -116,13 +116,13 @@ namespace FasterGameLoading
                     }
                     catch (Exception e)
                     {
-                        Log.Error($"[FasterGameLoading] Error in background inheritance cache saving: {e}");
+                        Log.Error($"Error in background inheritance cache saving: {e}");
                     }
                 });
             }
 
             totalSw.Stop();
-            Log.Warning($"[FasterGameLoading] Built inheritance cache. Initial: {initialCount}, New: {newCount}, Total: {root.ChildNodes.Count}. Took {totalSw.ElapsedMilliseconds}ms (Load: {loadingSw.ElapsedMilliseconds}ms, Hash: {hashingSw.ElapsedMilliseconds}ms, Import: {importSw.ElapsedMilliseconds}ms).");
+            Utils.Log($"Built inheritance cache. Initial: {initialCount}, New: {newCount}, Total: {root.ChildNodes.Count}. Took {totalSw.ElapsedMilliseconds}ms (Load: {loadingSw.ElapsedMilliseconds}ms, Hash: {hashingSw.ElapsedMilliseconds}ms, Import: {importSw.ElapsedMilliseconds}ms).");
         }
 
         public static bool TryApplyInheritanceCache()
@@ -130,20 +130,8 @@ namespace FasterGameLoading
             var totalSw = Stopwatch.StartNew();
             try
             {
-                if (_inheritanceCache == null)
-                {
-                    _inheritanceCache = new Dictionary<string, XmlNode>();
-                    var doc = LoadXmlDocument(XMLInheritanceCachePath);
-                    if (doc?.DocumentElement != null)
-                    {
-                        var concurrentCache = new System.Collections.Concurrent.ConcurrentDictionary<string, XmlNode>();
-                        Parallel.ForEach(doc.DocumentElement.ChildNodes.Cast<XmlNode>(), node =>
-                        {
-                            concurrentCache[node.Attributes["FGL_OriginalHash"].Value] = node;
-                        });
-                        _inheritanceCache = new Dictionary<string, XmlNode>(concurrentCache);
-                    }
-                }
+                if (_inheritanceCache is null) Utils.Log("Inheritance cache is null, loading...");
+                LoadInheritanceCache();
 
                 if (_inheritanceCache.Count == 0) return false;
 
@@ -158,7 +146,7 @@ namespace FasterGameLoading
                 {
                     if (!_inheritanceCache.ContainsKey(nodeHashes[inheritanceNode.xmlNode]))
                     {
-                        Log.Warning($"[FasterGameLoading] Inheritance cache is incomplete (missing {inheritanceNode.xmlNode.Name}), falling back to vanilla resolver.");
+                        Utils.Log($"Inheritance cache is incomplete (missing {inheritanceNode.xmlNode.Name}), falling back to vanilla resolver.");
                         return false;
                     }
                 }
@@ -174,7 +162,7 @@ namespace FasterGameLoading
                 XmlInheritance.resolvedNodes = newResolvedNodes;
                 XmlInheritance.unresolvedNodes.Clear();
                 totalSw.Stop();
-                Log.Warning($"[FasterGameLoading] Applied inheritance cache. Resolved: {newResolvedNodes.Count}. Took {totalSw.ElapsedMilliseconds}ms.");
+                Utils.Log($"Applied inheritance cache. Resolved: {newResolvedNodes.Count}. Took {totalSw.ElapsedMilliseconds}ms.");
                 return true;
             }
             catch (Exception e)
@@ -182,6 +170,24 @@ namespace FasterGameLoading
                 Log.Error($"Error loading inheritance cache, rebuilding. Error: {e}");
                 InvalidateCache();
                 return false;
+            }
+        }
+
+        private static void LoadInheritanceCache()
+        {
+            if (_inheritanceCache == null)
+            {
+                _inheritanceCache = new Dictionary<string, XmlNode>();
+                var doc = LoadXmlDocument(XMLInheritanceCachePath);
+                if (doc?.DocumentElement != null)
+                {
+                    var concurrentCache = new System.Collections.Concurrent.ConcurrentDictionary<string, XmlNode>();
+                    Parallel.ForEach(doc.DocumentElement.ChildNodes.Cast<XmlNode>(), node =>
+                    {
+                        concurrentCache[node.Attributes["FGL_OriginalHash"].Value] = node;
+                    });
+                    _inheritanceCache = new Dictionary<string, XmlNode>(concurrentCache);
+                }
             }
         }
 
@@ -276,7 +282,7 @@ namespace FasterGameLoading
 
             Task.Run(() => SaveXMLCache_Threaded(docString, metaString, buildMetaSw.ElapsedMilliseconds));
             totalSw.Stop();
-            Log.Warning($"[FasterGameLoading] SaveXMLCache took {totalSw.ElapsedMilliseconds}ms.");
+            Utils.Log($"SaveXMLCache took {totalSw.ElapsedMilliseconds}ms.");
         }
 
         private static void SaveXMLCache_Threaded(string doc, string metadataDoc, long buildMetaMs)
@@ -289,7 +295,7 @@ namespace FasterGameLoading
             }
             catch (Exception e)
             {
-                Log.Error($"[FasterGameLoading] Error in background XML cache saving: {e}");
+                Log.Error($"Error in background XML cache saving: {e}");
             }
         }
 
@@ -299,7 +305,7 @@ namespace FasterGameLoading
             {
                 LoadXmlDocument(XMLCachePath);
                 LoadXmlDocument(XMLMetadataCachePath);
-                LoadXmlDocument(XMLInheritanceCachePath);
+                LoadInheritanceCache();
             });
         }
         public static bool TryLoadXMLCache(out XmlDocument doc)
@@ -356,7 +362,7 @@ namespace FasterGameLoading
             }
             catch (Exception e)
             {
-                Log.Warning($"[FasterGameLoading] Could not load XML document from {path}. Error: {e}");
+                Utils.Log($"Could not load XML document from {path}. Error: {e}");
                 return null;
             }
         }
@@ -383,7 +389,7 @@ namespace FasterGameLoading
                 {
                     if (!loggedLowSpaceWarning)
                     {
-                        Log.Warning($"[FasterGameLoading] Not enough free space on drive {drive.Name} to cache XML files. Invalidating and deactivating cache. Available: {drive.AvailableFreeSpace / (1024 * 1024)} MB, Required: {MinFreeSpaceForCaching / (1024 * 1024)} MB.");
+                        Utils.Log($"Not enough free space on drive {drive.Name} to cache XML files. Invalidating and deactivating cache. Available: {drive.AvailableFreeSpace / (1024 * 1024)} MB, Required: {MinFreeSpaceForCaching / (1024 * 1024)} MB.");
                         InvalidateCache();
                         loggedLowSpaceWarning = true;
                     }
@@ -392,7 +398,7 @@ namespace FasterGameLoading
             }
             catch (Exception e)
             {
-                Log.Error($"[FasterGameLoading] Error checking for free disk space: {e}");
+                Log.Error($"Error checking for free disk space: {e}");
                 return false;
             }
             return true;

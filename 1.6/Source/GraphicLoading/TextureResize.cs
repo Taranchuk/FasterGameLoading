@@ -193,7 +193,7 @@ namespace FasterGameLoading
                 {
                     ResizeTexture(entry.Key, entry.Value);
                 });
-                Log.Warning("Downscaled " + texturesToResize.Count + " textures");
+                Utils.Log("Downscaled " + texturesToResize.Count + " textures");
             }
         }
 

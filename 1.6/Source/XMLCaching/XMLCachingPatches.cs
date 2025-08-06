@@ -48,7 +48,7 @@ namespace FasterGameLoading
             {
                 if (modsChanged && File.Exists(XmlCacheManager.XMLCachePath))
                 {
-                    Log.Warning("[FasterGameLoading] Mod list changed, invalidating cache.");
+                    Utils.Log("Mod list changed, invalidating cache.");
                 }
                 XmlCacheManager.InvalidateCache();
             }
@@ -70,7 +70,7 @@ namespace FasterGameLoading
                 {
                     if (XmlCacheManager.TryLoadXMLCache(out var cachedDoc))
                     {
-                        Log.Warning("[FasterGameLoading] XML cache is valid, loading it and skipping CombineIntoUnifiedXML and ApplyPatches.");
+                        Utils.Log("XML cache is valid, loading it and skipping CombineIntoUnifiedXML and ApplyPatches.");
                         __result = cachedDoc;
                         XmlCacheManager.HydrateLookupsFrom(__result, assetlookup);
                         XmlCacheManager.XMLCacheLoaded = true;
@@ -79,13 +79,13 @@ namespace FasterGameLoading
                     }
                     else
                     {
-                        Log.Warning("[FasterGameLoading] Failed to load XML cache.");
+                        Utils.Log("Failed to load XML cache.");
                         XmlCacheManager.InvalidateCache();
                     }
                 }
                 else
                 {
-                    Log.Warning("[FasterGameLoading] Hashes changed, invalidating cache.");
+                    Utils.Log("Hashes changed, invalidating cache.");
                     XmlCacheManager.InvalidateCache();
                 }
             }
@@ -123,7 +123,7 @@ namespace FasterGameLoading
             if (!performComparison)
             {
                 sw.Stop();
-                Log.Warning($"[FasterGameLoading] Took {sw.ElapsedMilliseconds}ms to hash {xmls.Count} files.");
+                Utils.Log($"Took {sw.ElapsedMilliseconds}ms to hash {xmls.Count} files.");
                 return false;
             }
             var currentHashes = XmlCacheManager.currentFileHashes;
@@ -145,7 +145,7 @@ namespace FasterGameLoading
             }
             var result = DoHashesMatch();
             sw.Stop();
-            Log.Warning($"[FasterGameLoading] Took {sw.ElapsedMilliseconds}ms to hash and compare {xmls.Count} files.");
+            Utils.Log($"Took {sw.ElapsedMilliseconds}ms to hash and compare {xmls.Count} files.");
             return result;
         }
     }

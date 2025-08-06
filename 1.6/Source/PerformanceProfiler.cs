@@ -203,6 +203,7 @@ namespace FasterGameLoading
         }
         private static void MethodProfilingPrefix(MethodBase __originalMethod, ref long __state)
         {
+            if (UnityData.IsInMainThread is false) return;
             if (callStack is null)
             {
                 callStack = new Stack<LoadingActions.ProfilingTracker>();
@@ -216,6 +217,7 @@ namespace FasterGameLoading
 
         private static void MethodProfilingPostfix(MethodBase __originalMethod, long __state)
         {
+            if (UnityData.IsInMainThread is false) return;
             if (callStack != null && !stopProfiling && LoadingActions.profiledMethods.TryGetValue(__originalMethod, out var tracker))
             {
                 long elapsedTicks = Stopwatch.GetTimestamp() - __state;

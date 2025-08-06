@@ -41,7 +41,7 @@ namespace FasterGameLoading
                     //        {
                     //            if (otherPath.Contains(otherMod.RootDir.FullName))
                     //            {
-                    //                Log.Warning(mod.Name + " - Preventing loading " + texture.name + ", already replaced with " + otherMod.Name);
+                    //                Utils.Log(mod.Name + " - Preventing loading " + texture.name + ", already replaced with " + otherMod.Name);
                     //            }
                     //        }
                     //    }

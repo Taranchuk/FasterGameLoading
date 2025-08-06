@@ -1,6 +1,7 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Verse;
 
 namespace FasterGameLoading
@@ -8,37 +9,26 @@ namespace FasterGameLoading
     [HarmonyPatch(typeof(AccessTools), "TypeByName")]
     public static class AccessTools_TypeByName_Patch
     {
-        public static bool Prefix(ref Type __result, out (bool, string) __state, ref string name)
+        public static bool ignore;
+        public static bool Prefix(ref Type __result, out (string originalTypeName, bool wasCacheHit) __state, ref string name)
         {
-            var oldName = name;
-            if (FasterGameLoadingSettings.loadedTypesByFullNameSinceLastSession.TryGetValue(name, out var fullName))
+            if (ignore)
             {
-                name = fullName;
-            }
-            if (GenTypes_GetTypeInAnyAssemblyInt_Patch.cachedResults.TryGetValue(name, out var result))
-            {
-                __result = result;
-                __state = new (true, oldName);
-                return false;
-            }
-            else
-            {
-                __state = new(false, oldName);
+                __state = default;
                 return true;
             }
+            if (ReflectionCacheManager.TryGetFromCache(ref name, out __result, out __state))
+            {
+                return false;
+            }
+            return true;
         }
 
-        public static void Postfix(Type __result, string name, (bool, string) __state)
+        public static void Postfix(Type __result, string name, (string originalTypeName, bool wasCacheHit) __state)
         {
-            if (__state.Item1 is false)
-            {
-                GenTypes_GetTypeInAnyAssemblyInt_Patch.cachedResults[name] = __result;
-                if (__result != null && __result.FullName != name)
-                {
-                    FasterGameLoadingSettings.loadedTypesByFullNameSinceLastSession[__state.Item2] = __result.FullName;
-                    GenTypes_GetTypeInAnyAssemblyInt_Patch.cachedResults[__result.FullName] = __result;
-                }
-            }
+            if (ignore) return;
+            
+            ReflectionCacheManager.RegisterFoundType(__result, __state.originalTypeName, name, __state.wasCacheHit);
         }
     }
 }

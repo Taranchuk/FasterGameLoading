@@ -11,6 +11,8 @@ namespace FasterGameLoading
         public static Dictionary<string, string> loadedTexturesSinceLastSession = new Dictionary<string, string>();
         public static Dictionary<string, ModContentPack> modsByPackageIds = new Dictionary<string, ModContentPack>();
         public static Dictionary<string, string> loadedTypesByFullNameSinceLastSession = new Dictionary<string, string>();
+        public static List<string> loadedTypesSinceLastSession = new List<string>();
+        public static System.Collections.Concurrent.ConcurrentDictionary<string, byte> typesLoadedThisSession = new System.Collections.Concurrent.ConcurrentDictionary<string, byte>();
         public static List<string> modsInLastSession = new List<string>();
         public static HashSet<string> successfulXMLPathesSinceLastSession = new HashSet<string>();
         public static HashSet<string> failedXMLPathesSinceLastSession = new HashSet<string>();
@@ -68,8 +70,13 @@ namespace FasterGameLoading
         public override void ExposeData()
         {
             base.ExposeData();
+            if (Scribe.mode == LoadSaveMode.Saving)
+            {
+                loadedTypesSinceLastSession = typesLoadedThisSession.Keys.ToList();
+            }
             Scribe_Collections.Look(ref loadedTexturesSinceLastSession, "loadedTexturesSinceLastSession", LookMode.Value, LookMode.Value);
             Scribe_Collections.Look(ref loadedTypesByFullNameSinceLastSession, "loadedTypesByFullNameSinceLastSession", LookMode.Value, LookMode.Value);
+            Scribe_Collections.Look(ref loadedTypesSinceLastSession, "loadedTypesSinceLastSession", LookMode.Value);
             Scribe_Collections.Look(ref successfulXMLPathesSinceLastSession, "successfulXMLPathesSinceLastSession", LookMode.Value);
             Scribe_Collections.Look(ref failedXMLPathesSinceLastSession, "failedXMLPathesSinceLastSession", LookMode.Value);
             Scribe_Collections.Look(ref modsInLastSession, "modsInLastSession", LookMode.Value);
@@ -83,8 +90,10 @@ namespace FasterGameLoading
             Scribe_Collections.Look(ref xmlHashes, "xmlHashes", LookMode.Value, LookMode.Value);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
+                typesLoadedThisSession = new System.Collections.Concurrent.ConcurrentDictionary<string, byte>();
                 loadedTexturesSinceLastSession ??= new Dictionary<string, string>();
                 loadedTypesByFullNameSinceLastSession ??= new Dictionary<string, string>();
+                loadedTypesSinceLastSession ??= new List<string>();
                 modsByPackageIds ??= new Dictionary<string, ModContentPack>();
                 failedXMLPathesSinceLastSession ??= new HashSet<string>();
                 successfulXMLPathesSinceLastSession ??= new HashSet<string>();
@@ -93,12 +102,14 @@ namespace FasterGameLoading
                 {
                     loadedTexturesSinceLastSession.Clear();
                     loadedTypesByFullNameSinceLastSession.Clear();
+                    loadedTypesSinceLastSession.Clear();
                     failedXMLPathesSinceLastSession.Clear();
                     successfulXMLPathesSinceLastSession.Clear();
                     xmlHashes.Clear();
-                    Log.Warning("[FasterGameLoading] mods changed, clearing cache");
+                    Utils.Log("Mods changed, clearing cache");
                 }
             }
         }
     }
 }
+

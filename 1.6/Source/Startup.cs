@@ -27,11 +27,10 @@ namespace FasterGameLoading
             {
                 var firstTimestampt = DateTime.Parse(Log.messageQueue.messages.First().timestamp);
                 var timeSpent = DateTime.Now - firstTimestampt;
-                Log.Warning("Mods installed: " + ModLister.AllInstalledMods.Where(x => x.Active).Count() + " - total startup time: " + timeSpent.ToString(@"m\:ss") + " - " + DateTime.Now.ToString());
+                Utils.Log("Mods installed: " + ModLister.AllInstalledMods.Where(x => x.Active).Count() + " - total startup time: " + timeSpent.ToString(@"m\:ss") + " - " + DateTime.Now.ToString());
             });
             FasterGameLoadingSettings.modsInLastSession = ModsConfig.ActiveModsInLoadOrder.Select(x => x.packageIdLowerCase).ToList();
             FasterGameLoadingSettings.loadedTexturesSinceLastSession = new Dictionary<string, string>(ModContentLoaderTexture2D_LoadTexture_Patch.loadedTexturesThisSession);
-            FasterGameLoadingSettings.loadedTypesByFullNameSinceLastSession = new Dictionary<string, string>(GenTypes_GetTypeInAnyAssemblyInt_Patch.loadedTypesThisSession);
             FasterGameLoadingSettings.successfulXMLPathesSinceLastSession = new HashSet<string>(XmlNode_SelectSingleNode_Patch.successfulXMLPathesThisSession);
             FasterGameLoadingSettings.failedXMLPathesSinceLastSession = new HashSet<string>(XmlNode_SelectSingleNode_Patch.failedXMLPathesThisSession);
             FasterGameLoadingMod.settings.xmlHashes = new Dictionary<string, string>(XmlCacheManager.currentFileHashes);

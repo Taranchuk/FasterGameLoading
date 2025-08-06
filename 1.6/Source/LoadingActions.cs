@@ -16,6 +16,7 @@ namespace FasterGameLoading
         public float MaxImpactThisFrame => 0.05f;
         public Queue<(ThingDef def, Action action)> thingGraphicsToLoad = new();
         public Queue<(TerrainDef def, Action action)> terrainGraphicsToLoad = new();
+        public Queue<(ThingStyleDef def, Action action)> thingStyleGraphicsToLoad = new();
         public Queue<(BuildableDef def, Action action)> iconsToLoad = new();
         public Queue<(SubSoundDef def, Action action)> subSoundDefToResolve = new();
         public static bool AllGraphicLoaded = false;
@@ -24,25 +25,31 @@ namespace FasterGameLoading
         private static readonly List<ProgressTracker> progressTrackers;
         public static readonly ProgressTracker ThingGraphicsProgress = new() { label = "thing graphics" };
         public static readonly ProgressTracker TerrainGraphicsProgress = new() { label = "terrain graphics" };
+        public static readonly ProgressTracker ThingStyleGraphicsProgress = new() { label = "thing style graphics" };
         public static readonly ProgressTracker IconsProgress = new() { label = "icons" };
         public static readonly ProgressTracker SoundsProgress = new() { label = "sounds" };
         public static readonly ProgressTracker AtlasProgress = new() { label = "atlas baking" };
+        public static readonly ProgressTracker ReflectionTypeCacheProgress = new() { label = "reflection type cache" };
+        public static readonly ProfilingTracker RegisterFoundTypeTracker = new() { methodName = "RegisterFoundType", declaringType = typeof(ReflectionCacheManager) };
+        public static readonly ProfilingTracker TryGetFromCacheTracker = new() { methodName = "TryGetFromCache", declaringType = typeof(ReflectionCacheManager) };
         public static readonly Dictionary<MethodBase, ProfilingTracker> profiledMethods = new();
         public static readonly List<ProfilingTracker> profilingTrackers = new();
         private Stopwatch stopwatch = new();
         private bool ElapsedMaxImpact => (float)stopwatch.ElapsedTicks / Stopwatch.Frequency >= MaxImpactThisFrame;
-        private bool graphicsProcessingStarted = false;
-        private bool assetsProcessingStarted = false;
         static LoadingActions()
         {
             progressTrackers = new List<ProgressTracker>
             {
                 ThingGraphicsProgress,
                 TerrainGraphicsProgress,
+                ThingStyleGraphicsProgress,
                 AtlasProgress,
                 IconsProgress,
-                SoundsProgress
+                SoundsProgress,
+                ReflectionTypeCacheProgress,
             };
+            profilingTrackers.Add(RegisterFoundTypeTracker);
+            profilingTrackers.Add(TryGetFromCacheTracker);
         }
 
         public void LateUpdate()
@@ -56,25 +63,8 @@ namespace FasterGameLoading
                     ModContentPack_ReloadContentInt_Patch.loadedMods.Add(modToLoad);
                 }
             }
-
-            if (!graphicsProcessingStarted)
-            {
-                if (thingGraphicsToLoad.Any() || terrainGraphicsToLoad.Any() || iconsToLoad.Any())
-                {
-                    graphicsProcessingStarted = true;
-                    StartCoroutine(ProcessGraphicsIncrementally());
-                }
-            }
-
-            if (!assetsProcessingStarted)
-            {
-                if (subSoundDefToResolve.Any() || !FasterGameLoadingSettings.disableStaticAtlasesBaking && GlobalTextureAtlasManager.buildQueue.Any())
-                {
-                    assetsProcessingStarted = true;
-                    StartCoroutine(ProcessAssetsIncrementally());
-                }
-            }
         }
+
         public class ProfilingTracker
         {
             public string methodName;
@@ -102,29 +92,35 @@ namespace FasterGameLoading
                 return;
             }
 
-            float barWidth = 300f;
+            float barWidth = 350f;
             float barHeight = 32f;
             float x = 15;
             float y = 15;
+            Text.Anchor = TextAnchor.MiddleLeft;
 
-            var originalColor = GUI.color;
             foreach (var tracker in progressTrackers)
             {
+                var rect = new Rect(x, y, barWidth, barHeight);
                 if (tracker.total > 0 && tracker.processed < tracker.total)
                 {
-                    var rect = new Rect(x, y, barWidth, barHeight);
                     GUI.color = Color.green;
-                    Widgets.FillableBar(rect, tracker.Progress, BaseContent.WhiteTex);
-                    GUI.color = originalColor;
-                    Text.Anchor = TextAnchor.MiddleCenter;
-                    Widgets.Label(rect, $"Loading {tracker.label}: {tracker.processed} / {tracker.total}");
-                    Text.Anchor = TextAnchor.UpperLeft;
-                    y += barHeight + 5f;
                 }
+                else if (tracker.total <= 0)
+                {
+                    GUI.color = Color.red;
+                }
+
+                Widgets.FillableBar(rect, tracker.Progress, Utils.BarTex, Utils.EmptyBarTex, false);
+                GUI.color = Color.white;
+                var label = tracker.label.StartsWith("reflection")
+                    ? $"Cache hits {tracker.label}: {tracker.processed} / {tracker.total} ({tracker.Progress:P0})"
+                    : $"Loading {tracker.label}: {tracker.processed} / {tracker.total}";
+                Widgets.Label(rect.ContractedBy(5), label);
+                y += barHeight + 5f;
             }
             if (profilingTrackers.Any())
             {
-                var sortedTrackers = profilingTrackers.Where(t => t.SelfTimeMs > 100 && t.AverageSelfTimeMs >= 0.05f).OrderByDescending(t => t.SelfTimeMs).ToList();
+                var sortedTrackers = profilingTrackers.OrderByDescending(t => t.SelfTimeMs).ToList();
                 if (sortedTrackers.Any())
                 {
                     float profilingY = y + 20;
@@ -144,10 +140,22 @@ namespace FasterGameLoading
                     }
                 }
             }
+            Text.Anchor = TextAnchor.UpperLeft;
         }
 
-        public IEnumerator ProcessAssetsIncrementally()
+        public void StartAssetLoading()
         {
+            stopwatch.Start();
+            StartCoroutine(ProcessGraphicsIncrementally());
+        }
+
+        private IEnumerator ProcessGraphicsIncrementally()
+        {
+            yield return StartCoroutine(ProcessQueueIncrementally(thingGraphicsToLoad, ProcessSingleGraphic, ThingGraphicsProgress));
+            yield return StartCoroutine(ProcessQueueIncrementally(terrainGraphicsToLoad, ProcessSingleTerrainGraphic, TerrainGraphicsProgress));
+            yield return StartCoroutine(ProcessQueueIncrementally(thingStyleGraphicsToLoad, ProcessSingleThingStyleGraphic, ThingStyleGraphicsProgress));
+            yield return StartCoroutine(ProcessQueueIncrementally(iconsToLoad, ProcessSingleIcon, IconsProgress));
+
             yield return StartCoroutine(ProcessQueueIncrementally(subSoundDefToResolve, ProcessSingleSubSoundDef, SoundsProgress));
 
             if (!FasterGameLoadingSettings.disableStaticAtlasesBaking)
@@ -158,26 +166,16 @@ namespace FasterGameLoading
             AllGraphicLoaded = true;
         }
 
-        private IEnumerator ProcessGraphicsIncrementally()
-        {
-            while (!SolidBioDatabase_LoadAllBios_Patch.canLoadThingGraphics)
-            {
-                yield return null;
-            }
-
-            yield return StartCoroutine(ProcessQueueIncrementally(thingGraphicsToLoad, ProcessSingleGraphic, ThingGraphicsProgress));
-            yield return StartCoroutine(ProcessQueueIncrementally(terrainGraphicsToLoad, ProcessSingleTerrainGraphic, TerrainGraphicsProgress));
-            yield return StartCoroutine(ProcessQueueIncrementally(iconsToLoad, ProcessSingleIcon, IconsProgress));
-        }
-
         public void FinalizeLoading()
         {
             ProcessQueueSynchronously(thingGraphicsToLoad, ProcessSingleGraphic, ThingGraphicsProgress);
             ProcessQueueSynchronously(terrainGraphicsToLoad, ProcessSingleTerrainGraphic, TerrainGraphicsProgress);
+            ProcessQueueSynchronously(thingStyleGraphicsToLoad, ProcessSingleThingStyleGraphic, ThingStyleGraphicsProgress);
             ProcessQueueSynchronously(iconsToLoad, ProcessSingleIcon, IconsProgress);
             RefreshMap();
             ProcessQueueSynchronously(subSoundDefToResolve, ProcessSingleSubSoundDef, SoundsProgress);
             SoundStarter_Patch.Unpatch();
+            //ProcessAtlasQueue();
             stopwatch.Stop();
         }
 
@@ -214,9 +212,20 @@ namespace FasterGameLoading
             loadedTerrainDefsForMapRefresh.Clear();
         }
 
+        private void ProcessAtlasQueue()
+        {
+            if (FasterGameLoadingSettings.disableStaticAtlasesBaking || GlobalTextureAtlasManager.buildQueue.Count == 0)
+            {
+                return;
+            }
+            Utils.Log("Starting baking StaticAtlases synchronously - " + DateTime.Now);
+            GlobalTextureAtlasManager.BakeStaticAtlases();
+            Utils.Log("Finished baking StaticAtlases synchronously - " + DateTime.Now);
+        }
+
         private IEnumerator BakeStaticAtlases()
         {
-            Log.Warning("Starting baking StaticAtlases - " + DateTime.Now);
+            Utils.Log("Starting baking StaticAtlases - " + DateTime.Now);
 
             BuildingsDamageSectionLayerUtility.TryInsertIntoAtlas();
             MinifiedThing.TryInsertIntoAtlas();
@@ -281,7 +290,7 @@ namespace FasterGameLoading
                 }
             }
 
-            Log.Warning("Finished baking StaticAtlases - " + DateTime.Now);
+            Utils.Log("Finished baking StaticAtlases - " + DateTime.Now);
 
             void FlushBatch(TextureAtlasGroupKey key, List<(Texture2D main, Texture2D mask)> batch, Stopwatch sw)
             {
@@ -354,6 +363,18 @@ namespace FasterGameLoading
             }
         }
 
+        private void ProcessSingleThingStyleGraphic(ThingStyleDef def, Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                Error("Error loading graphic for " + def, ex);
+            }
+        }
+
         private void ProcessSingleIcon(BuildableDef def, Action action)
         {
             if (def.uiIcon == BaseContent.BadTex || def.uiIcon == null)
@@ -387,7 +408,7 @@ namespace FasterGameLoading
             {
                 yield break;
             }
-            Log.Warning($"Starting loading {tracker.label}: {queue.Count} - {DateTime.Now}");
+            Utils.Log($"Starting loading {tracker.label}: {queue.Count} - {DateTime.Now}");
             tracker.total += queue.Count;
             stopwatch.Restart();
             while (queue.Any())
@@ -406,7 +427,7 @@ namespace FasterGameLoading
                     stopwatch.Restart();
                 }
             }
-            Log.Warning($"Finished loading {tracker.label} - {DateTime.Now}");
+            Utils.Log($"Finished loading {tracker.label} - {DateTime.Now}");
         }
 
         private void ProcessQueueSynchronously<T>(Queue<(T, Action)> queue, Action<T, Action> processor, ProgressTracker tracker)
