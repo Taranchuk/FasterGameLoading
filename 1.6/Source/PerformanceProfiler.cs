@@ -185,6 +185,8 @@ namespace FasterGameLoading
 
         private static HarmonyMethod profilePrefix = new HarmonyMethod(AccessTools.Method(typeof(PerformanceProfiling), nameof(MethodProfilingPrefix)));
         private static HarmonyMethod profilePostfix = new HarmonyMethod(AccessTools.Method(typeof(PerformanceProfiling), nameof(MethodProfilingPostfix)));
+        [ThreadStatic]
+        private static Stack<LoadingActions.ProfilingTracker> callStack;
         private static void ProfileMethod(MethodBase methodInfo)
         {
             if (methodInfo.IsStatic && methodInfo.Name.Contains("cctor"))
@@ -201,19 +203,30 @@ namespace FasterGameLoading
         }
         private static void MethodProfilingPrefix(MethodBase __originalMethod, ref long __state)
         {
-            if (!stopProfiling && LoadingActions.profiledMethods.ContainsKey(__originalMethod))
+            if (callStack is null)
             {
+                callStack = new Stack<LoadingActions.ProfilingTracker>();
+            }
+            if (!stopProfiling && LoadingActions.profiledMethods.TryGetValue(__originalMethod, out var tracker))
+            {
+                callStack.Push(tracker);
                 __state = Stopwatch.GetTimestamp();
             }
         }
 
         private static void MethodProfilingPostfix(MethodBase __originalMethod, long __state)
         {
-            if (!stopProfiling && LoadingActions.profiledMethods.TryGetValue(__originalMethod, out var tracker))
+            if (callStack != null && !stopProfiling && LoadingActions.profiledMethods.TryGetValue(__originalMethod, out var tracker))
             {
                 long elapsedTicks = Stopwatch.GetTimestamp() - __state;
                 tracker.totalTicks += elapsedTicks;
                 tracker.callCount++;
+                callStack.Pop();
+                if (callStack.Count > 0)
+                {
+                    var parent = callStack.Peek();
+                    parent.childrenTicks += elapsedTicks;
+                }
             }
         }
     }

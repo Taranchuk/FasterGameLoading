@@ -80,9 +80,12 @@ namespace FasterGameLoading
             public string methodName;
             public Type declaringType;
             public long totalTicks;
+            public long childrenTicks;
             public int callCount;
             public float AverageTimeMs => callCount > 0 ? (float)totalTicks / callCount / Stopwatch.Frequency * 1000f : 0f;
             public float TotalTimeMs => (float)totalTicks / Stopwatch.Frequency * 1000f;
+            public float SelfTimeMs => (float)(totalTicks - childrenTicks) / Stopwatch.Frequency * 1000f;
+            public float AverageSelfTimeMs => callCount > 0 ? (float)(totalTicks - childrenTicks) / callCount / Stopwatch.Frequency * 1000f : 0f;
         }
         public class ProgressTracker
         {
@@ -121,7 +124,7 @@ namespace FasterGameLoading
             }
             if (profilingTrackers.Any())
             {
-                var sortedTrackers = profilingTrackers.Where(t => t.TotalTimeMs > 500).OrderByDescending(t => t.TotalTimeMs).ToList();
+                var sortedTrackers = profilingTrackers.Where(t => t.SelfTimeMs > 100 && t.AverageSelfTimeMs >= 0.05f).OrderByDescending(t => t.SelfTimeMs).ToList();
                 if (sortedTrackers.Any())
                 {
                     float profilingY = y + 20;
@@ -135,7 +138,7 @@ namespace FasterGameLoading
 
                     foreach (var tracker in sortedTrackers)
                     {
-                        string label = $"{tracker.declaringType.Name}.{tracker.methodName}: {tracker.TotalTimeMs:F4}ms total, {tracker.AverageTimeMs:F4}ms avg, {tracker.callCount} calls";
+                        string label = $"{tracker.declaringType.Name}.{tracker.methodName}: {tracker.SelfTimeMs:F2}ms self, {tracker.AverageSelfTimeMs:F2}ms average, {tracker.callCount} calls";
                         Widgets.Label(new Rect(x, profilingY, barWidth * 2, 20), label);
                         profilingY += 20;
                     }

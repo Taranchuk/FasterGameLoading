@@ -19,6 +19,7 @@ namespace FasterGameLoading
         public static bool disableStaticAtlasesBaking;
         public static bool xmlCaching = true;
         public static bool xmlInheritanceCaching = true;
+        public static bool experimentalOptimizations = true;
         public static bool debugMode;
         public Dictionary<string, string> xmlHashes = new Dictionary<string, string>();
         public static ModContentPack GetModContent(string packageId)
@@ -41,6 +42,7 @@ namespace FasterGameLoading
             ls.CheckboxLabeled("Disable static atlases backing. Will cut some time off during loading, but might make map rendering perform a bit slower.", ref disableStaticAtlasesBaking);
             ls.CheckboxLabeled("Enable XML caching. This will speed up game loading after the first launch, but may cause issues with mods that dynamically change XML files. Disable if you encounter any issues.", ref xmlCaching);
             ls.CheckboxLabeled("Enable XML inheritance caching. This is a part of XML caching, disable it if you have any issues with inheritance.", ref xmlInheritanceCaching);
+            //ls.CheckboxLabeled("Enable experimental optimizations. May break things, use with caution.", ref experimentalOptimizations);
             ls.CheckboxLabeled("Enable debug mode. This is a modder tool, does nothing for end users.", ref debugMode);
             ls.GapLine();
             var explanation = "Some mods may contain a lot of high-res textures that take a long time to load. Use this to downscale hi-res textures. " +
@@ -76,6 +78,7 @@ namespace FasterGameLoading
             Scribe_Values.Look(ref earlyModContentLoading, "earlyModContentLoading", true);
             Scribe_Values.Look(ref xmlCaching, "xmlCaching", true);
             Scribe_Values.Look(ref xmlInheritanceCaching, "xmlInheritanceCaching", true);
+            Scribe_Values.Look(ref experimentalOptimizations, "experimentalOptimizations", true);
             Scribe_Values.Look(ref debugMode, "debugMode");
             Scribe_Collections.Look(ref xmlHashes, "xmlHashes", LookMode.Value, LookMode.Value);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)

@@ -81,13 +81,15 @@ namespace FasterGameLoading
             var newCount = 0;
 
             hashingSw.Start();
-            var nodesToProcess = new Dictionary<string, KeyValuePair<XmlNode, XmlInheritance.XmlInheritanceNode>>();
-            foreach (var kvp in XmlInheritance.resolvedNodes)
+            var nodesToProcess = new System.Collections.Concurrent.ConcurrentDictionary<string, KeyValuePair<XmlNode, XmlInheritance.XmlInheritanceNode>>();
+            Parallel.ForEach(XmlInheritance.resolvedNodes, (kvp) =>
             {
                 var originalNodeHash = GetNodeHash(kvp.Key);
-                if (_existingInheritanceCacheHashes.Contains(originalNodeHash)) continue;
-                nodesToProcess[originalNodeHash] = kvp;
-            }
+                if (!_existingInheritanceCacheHashes.Contains(originalNodeHash))
+                {
+                    nodesToProcess[originalNodeHash] = kvp;
+                }
+            });
             hashingSw.Stop();
 
             importSw.Start();

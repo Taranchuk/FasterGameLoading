@@ -1,5 +1,6 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Verse;
 
@@ -8,8 +9,8 @@ namespace FasterGameLoading
     [HarmonyPatch(typeof(GenTypes), "GetTypeInAnyAssemblyInt")]
     public static class GenTypes_GetTypeInAnyAssemblyInt_Patch
     {
-        public static Dictionary<string, Type> cachedResults = new Dictionary<string, Type>();
-        public static Dictionary<string, string> loadedTypesThisSession = new Dictionary<string, string>();
+        public static ConcurrentDictionary<string, Type> cachedResults = new ();
+        public static ConcurrentDictionary<string, string> loadedTypesThisSession = new();
         public static bool Prefix(ref Type __result, out (string, bool) __state, ref string typeName)
         {
             if (cachedResults.TryGetValue(typeName, out var result))
